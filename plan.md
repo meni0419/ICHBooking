@@ -105,12 +105,12 @@
   - src/accommodations/domain/repository_interfaces.py — IAccommodationRepository
   - src/accommodations/domain/services.py — инварианты (валидность цены, названия и т.д.)
 
-- 🔄 Приложение (use-cases)
+- ✅ Приложение (use-cases)
   - src/accommodations/application/commands.py — CreateAccommodation, UpdateAccommodation, DeleteAccommodation, ToggleAvailability
   - src/accommodations/application/queries.py — GetAccommodationById
   - src/accommodations/application/use_cases/ — обработчики
 
-- [ ] Инфраструктура
+- 🔄 Инфраструктура
   - src/accommodations/infrastructure/orm/models.py — ORM модель Accommodation (FK на users.User)
   - src/accommodations/infrastructure/repositories.py — реализация IAccommodationRepository
   - src/accommodations/infrastructure/admin.py — регистрация модели
