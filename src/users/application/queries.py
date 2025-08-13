@@ -1,2 +1,9 @@
 # Слой application: запросы (чтение)
-# TODO: определить запросы и обработчики
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class GetCurrentUserQuery:
+    user_id: int

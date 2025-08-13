@@ -64,31 +64,31 @@
 
 Цели: Регистрация, вход, роли (арендодатель/арендатор), разграничение прав.
 
-- [ ] Доменные модели и роли
+- [x] Доменные модели и роли
   - src/users/domain/entities.py — UserEntity (id, name, email, roles: {host, guest}, is_active)
   - src/users/domain/value_objects.py — Email, PasswordHash (при необходимости)
   - src/users/domain/repository_interfaces.py — IUserRepository (контракты поиска/создания)
   - src/users/domain/services.py — правила назначений ролей
 
-- [ ] Приложение (use-cases)
+- [x] Приложение (use-cases)
   - src/users/application/commands.py — RegisterUser, AssignRoles
   - src/users/application/queries.py — GetCurrentUser
   - src/users/application/use_cases/ — обработчики команд/запросов
 
-- [ ] Инфраструктура (ORM и репозитории)
+- [x] Инфраструктура (ORM и репозитории)
   - src/users/infrastructure/orm/models.py — кастомная модель User (на базе AbstractUser)
     - Поля: name (или first_name/last_name), email(unique), роли (например, JSON/ManyToMany/Choices/флаги)
   - src/users/infrastructure/repositories.py — Django-реализация IUserRepository
   - core/settings.py — AUTH_USER_MODEL = 'users.User'
   - src/users/infrastructure/admin.py — регистрация модели в админке
 
-- [ ] Интерфейсы (REST, JWT)
+- [x] Интерфейсы (REST, JWT)
   - src/users/interfaces/rest/serializers.py — RegisterSerializer, UserSerializer
   - src/users/interfaces/rest/views.py — RegisterView, LoginView (JWT cookie), LogoutView, MeView
   - src/users/interfaces/rest/permissions.py — IsHost, IsGuest
   - src/users/interfaces/rest/urls.py — /auth/register/, /auth/login/, /auth/logout/, /auth/me/
 
-- [ ] Права доступа
+- [~] Права доступа
   - Роль host: создавать/редактировать/удалять свои объявления
   - Роль guest: просматривать/фильтровать
 

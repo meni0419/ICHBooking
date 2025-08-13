@@ -1,2 +1,18 @@
 # Слой domain: контракты репозиториев
-# TODO: описать абстрактные интерфейсы репозиториев (protocols/ABC)
+from __future__ import annotations
+
+from typing import Optional, Protocol, runtime_checkable, Iterable
+
+from .entities import UserEntity
+from .value_objects import Email
+
+
+@runtime_checkable
+class IUserRepository(Protocol):
+    """Контракт репозитория пользователей. Реализация будет в infrastructure."""
+    def get_by_id(self, user_id: int) -> Optional[UserEntity]: ...
+    def get_by_email(self, email: Email) -> Optional[UserEntity]: ...
+    def exists_by_email(self, email: Email) -> bool: ...
+    def list_by_ids(self, ids: Iterable[int]) -> list[UserEntity]: ...
+    def create(self, user: UserEntity) -> UserEntity: ...
+    def update(self, user: UserEntity) -> UserEntity: ...
