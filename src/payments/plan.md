@@ -88,7 +88,7 @@
   - src/users/interfaces/rest/permissions.py — IsHost, IsGuest
   - src/users/interfaces/rest/urls.py — /auth/register/, /auth/login/, /auth/logout/, /auth/me/
 
-- [ ] Права доступа
+- [~] Права доступа
   - Роль host: создавать/редактировать/удалять свои объявления
   - Роль guest: просматривать/фильтровать
 
