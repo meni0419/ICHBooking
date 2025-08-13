@@ -110,12 +110,12 @@
   - src/accommodations/application/queries.py — GetAccommodationById
   - src/accommodations/application/use_cases/ — обработчики
 
-- 🔄 Инфраструктура
+- ✅ Инфраструктура
   - src/accommodations/infrastructure/orm/models.py — ORM модель Accommodation (FK на users.User)
   - src/accommodations/infrastructure/repositories.py — реализация IAccommodationRepository
   - src/accommodations/infrastructure/admin.py — регистрация модели
 
-- [ ] Интерфейсы (REST)
+- 🔄 Интерфейсы (REST)
   - src/accommodations/interfaces/rest/serializers.py — AccommodationCreateUpdateSerializer, AccommodationDetailSerializer
   - src/accommodations/interfaces/rest/views.py — ViewSet/классы для CRUD и toggle
     - Create/Update/Delete — только для host-владельца
