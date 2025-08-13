@@ -28,29 +28,29 @@
 
 Задача: Подготовить окружение, пакеты, настройки.
 
-- [ ] Переключение на MySQL
+- [x] Переключение на MySQL
   - Настройки: core/settings.py (DATABASES)
   - Установить драйвер: mysqlclient (или PyMySQL)
   - Создать базу данных ICHBooking в MySQL, настроить доступы в ENV.
   - Миграции: python manage.py makemigrations && migrate
 
-- [ ] Подключение DRF
+- [x] Подключение DRF
   - Установить djangorestframework
   - core/settings.py: добавить 'rest_framework' и базовые REST_FRAMEWORK настройки
 
-- [ ] JWT в куках (DRF + SimpleJWT)
+- [x] JWT в куках (DRF + SimpleJWT)
   - Установить djangorestframework-simplejwt
   - core/settings.py: SIMPLE_JWT конфиг (lifetime, cookie names, rotation, samesite, secure), DRF аутентификатор
   - src/users/interfaces/rest/urls.py: JWT endpoints (login/refresh/logout)
   - src/users/interfaces/rest/views.py: вью для логина/логаута с установкой/очисткой cookie
   - CSRF: продумать стратегию (например, чтение CSRF из куки + заголовок)
 
-- [ ] Swagger/OpenAPI
+- [x] Swagger/OpenAPI
   - Установить drf-spectacular (или drf-yasg)
   - core/settings.py: spectacular настройки
   - core/urls.py: схемы /api/schema/, /api/docs/
 
-- [ ] Базовая конфигурация INSTALLED_APPS
+- [x] Базовая конфигурация INSTALLED_APPS
   - core/settings.py: 'src.users', 'src.accommodations', 'src.bookings', 'src.reviews', 'src.common' (payments отложим)
 
 Файлы и что в них будет:

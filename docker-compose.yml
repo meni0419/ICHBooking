@@ -1,18 +1,38 @@
-version: '3'
-
 services:
-
-  maildev:
-    image: maildev/maildev
-    restart: always
+  db:
+    image: mysql:8.0
+    container_name: ichbooking_db
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
-      - TZ=Asia/Shanghai
-      - MAILDEV_WEB_PORT=1080
-      - MAILDEV_SMTP_PORT=1025
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     ports:
-      - "8080:1080"
-      - "8025:1025"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
+      - "${DB_PORT}:3306"   # снаружи 33063 (в .env), внутри контейнера 3306
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p${DB_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ichbooking_web
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT}:8000"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+volumes:
+  db_data:

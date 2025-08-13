@@ -1,4 +1,4 @@
-.PHONY: push merge_master delete_branch create_repository
+.PHONY: push merge_main delete_branch create_repository
 
 # Detect Windows or Unix-like system
 ifeq ($(OS), Windows_NT)
@@ -36,18 +36,18 @@ else
 	git push origin $$current_branch
 endif
 
-# Merge to master command
-merge_master:
+# Merge to main command
+merge_main:
 ifeq ($(OS), Windows_NT)
 	for /f "delims=" %%b in ('git rev-parse --abbrev-ref HEAD') do set current_branch=%%b ^ \
-		&& git checkout master ^ \
-		&& git merge %%b -m "Merged %%b into master" ^ \
+		&& git checkout main ^ \
+		&& git merge %%b -m "Merged %%b into main" ^ \
 		&& git push ^ \
 		&& git checkout %%b
 else
 	current_branch=$$(git rev-parse --abbrev-ref HEAD) && \
-	git checkout master && \
-	git merge $$current_branch -m "Merged $$current_branch into master" && \
+	git checkout main && \
+	git merge $$current_branch -m "Merged $$current_branch into main" && \
 	git push && \
 	git checkout $$current_branch
 endif
@@ -94,5 +94,5 @@ else
 	git commit -m "Initial commit" && \
 	gh auth login && \
 	gh repo create $(r) --public --source=. --remote=origin && \
-	git push origin master
+	git push origin main
 endif
