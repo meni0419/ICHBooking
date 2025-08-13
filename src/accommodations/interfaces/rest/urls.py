@@ -1,6 +1,14 @@
 # Слой interfaces: маршрутизация текущего приложения
 from django.urls import path
 
+from .views import (
+    CreateAccommodationView, ToggleAvailabilityView,
+    AccommodationDetailView, ListMyAccommodationsView,
+)
+
 urlpatterns = [
-    # TODO: добавить url-паттерны
+    path("", CreateAccommodationView.as_view(), name="accommodations-create"),  # POST
+    path("mine/", ListMyAccommodationsView.as_view(), name="accommodations-mine"),  # GET
+    path("<int:acc_id>/", AccommodationDetailView.as_view(), name="accommodations-detail"),  # GET/PATCH/DELETE
+    path("<int:acc_id>/toggle/", ToggleAvailabilityView.as_view(), name="accommodations-toggle"),  # POST
 ]

@@ -7,8 +7,8 @@
 
 Статусные теги:
 - [ ] Не начато
-- [~] В процессе
-- [x] Готово
+- 🔄 В процессе
+- ✅ Готово
 
 Навигация:
 - Этап 0. Инфраструктура и зависимости
@@ -28,29 +28,29 @@
 
 Задача: Подготовить окружение, пакеты, настройки.
 
-- [x] Переключение на MySQL
+- ✅ Переключение на MySQL
   - Настройки: core/settings.py (DATABASES)
   - Установить драйвер: mysqlclient (или PyMySQL)
   - Создать базу данных ICHBooking в MySQL, настроить доступы в ENV.
   - Миграции: python manage.py makemigrations && migrate
 
-- [x] Подключение DRF
+- ✅ Подключение DRF
   - Установить djangorestframework
   - core/settings.py: добавить 'rest_framework' и базовые REST_FRAMEWORK настройки
 
-- [x] JWT в куках (DRF + SimpleJWT)
+- ✅ JWT в куках (DRF + SimpleJWT)
   - Установить djangorestframework-simplejwt
   - core/settings.py: SIMPLE_JWT конфиг (lifetime, cookie names, rotation, samesite, secure), DRF аутентификатор
   - src/users/interfaces/rest/urls.py: JWT endpoints (login/refresh/logout)
   - src/users/interfaces/rest/views.py: вью для логина/логаута с установкой/очисткой cookie
   - CSRF: продумать стратегию (например, чтение CSRF из куки + заголовок)
 
-- [x] Swagger/OpenAPI
+- ✅ Swagger/OpenAPI
   - Установить drf-spectacular (или drf-yasg)
   - core/settings.py: spectacular настройки
   - core/urls.py: схемы /api/schema/, /api/docs/
 
-- [x] Базовая конфигурация INSTALLED_APPS
+- ✅ Базовая конфигурация INSTALLED_APPS
   - core/settings.py: 'src.users', 'src.accommodations', 'src.bookings', 'src.reviews', 'src.common' (payments отложим)
 
 Файлы и что в них будет:
@@ -64,31 +64,31 @@
 
 Цели: Регистрация, вход, роли (арендодатель/арендатор), разграничение прав.
 
-- [x] Доменные модели и роли
+- ✅ Доменные модели и роли
   - src/users/domain/entities.py — UserEntity (id, name, email, roles: {host, guest}, is_active)
   - src/users/domain/value_objects.py — Email, PasswordHash (при необходимости)
   - src/users/domain/repository_interfaces.py — IUserRepository (контракты поиска/создания)
   - src/users/domain/services.py — правила назначений ролей
 
-- [x] Приложение (use-cases)
+- ✅ Приложение (use-cases)
   - src/users/application/commands.py — RegisterUser, AssignRoles
   - src/users/application/queries.py — GetCurrentUser
   - src/users/application/use_cases/ — обработчики команд/запросов
 
-- [x] Инфраструктура (ORM и репозитории)
+- ✅ Инфраструктура (ORM и репозитории)
   - src/users/infrastructure/orm/models.py — кастомная модель User (на базе AbstractUser)
     - Поля: name (или first_name/last_name), email(unique), роли (например, JSON/ManyToMany/Choices/флаги)
   - src/users/infrastructure/repositories.py — Django-реализация IUserRepository
   - core/settings.py — AUTH_USER_MODEL = 'users.User'
   - src/users/infrastructure/admin.py — регистрация модели в админке
 
-- [x] Интерфейсы (REST, JWT)
+- ✅ Интерфейсы (REST, JWT)
   - src/users/interfaces/rest/serializers.py — RegisterSerializer, UserSerializer
   - src/users/interfaces/rest/views.py — RegisterView, LoginView (JWT cookie), LogoutView, MeView
   - src/users/interfaces/rest/permissions.py — IsHost, IsGuest
   - src/users/interfaces/rest/urls.py — /auth/register/, /auth/login/, /auth/logout/, /auth/me/
 
-- [~] Права доступа
+- ✅ Права доступа
   - Роль host: создавать/редактировать/удалять свои объявления
   - Роль guest: просматривать/фильтровать
 
@@ -98,24 +98,24 @@
 
 Цели: Создание, редактирование, удаление, доступность (активно/неактивно).
 
-- [ ] Домейн
+- ✅ Домейн
   - src/accommodations/domain/entities.py — Accommodation (id, title, description, location, price, rooms, type, is_active, owner_id, created_at)
   - src/accommodations/domain/value_objects.py — Location (city, region, country="DE"), Money/Price, HousingType (Enum)
   - src/accommodations/domain/dtos.py — AccommodationDTO
   - src/accommodations/domain/repository_interfaces.py — IAccommodationRepository
   - src/accommodations/domain/services.py — инварианты (валидность цены, названия и т.д.)
 
-- [ ] Приложение (use-cases)
+- ✅ Приложение (use-cases)
   - src/accommodations/application/commands.py — CreateAccommodation, UpdateAccommodation, DeleteAccommodation, ToggleAvailability
   - src/accommodations/application/queries.py — GetAccommodationById
   - src/accommodations/application/use_cases/ — обработчики
 
-- [ ] Инфраструктура
+- ✅ Инфраструктура
   - src/accommodations/infrastructure/orm/models.py — ORM модель Accommodation (FK на users.User)
   - src/accommodations/infrastructure/repositories.py — реализация IAccommodationRepository
   - src/accommodations/infrastructure/admin.py — регистрация модели
 
-- [ ] Интерфейсы (REST)
+- 🔄 Интерфейсы (REST)
   - src/accommodations/interfaces/rest/serializers.py — AccommodationCreateUpdateSerializer, AccommodationDetailSerializer
   - src/accommodations/interfaces/rest/views.py — ViewSet/классы для CRUD и toggle
     - Create/Update/Delete — только для host-владельца
