@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     # Project
     'src.users',
@@ -149,10 +150,11 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_LIFETIME_MIN", "15"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_LIFETIME_DAYS", "7"))),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
     "SIGNING_KEY": SECRET_KEY,
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
-    # Куки: сами эндпоинты/вьюхи будут писать/удалять куки на Этапе 1
     "ALGORITHM": "HS256",
 }
 
@@ -167,4 +169,15 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API спецификация",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Добавим csrf-схему как apiKey в заголовке. Через Authorize можно вставить X-CSRFToken.
+    "APPEND_COMPONENTS": {
+        "securitySchemes": {
+            "csrf": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "X-CSRFToken",
+                "description": "Paste CSRF token value (from csrftoken cookie) here",
+            }
+        }
+    },
 }

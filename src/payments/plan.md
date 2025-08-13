@@ -75,14 +75,14 @@
   - src/users/application/queries.py — GetCurrentUser
   - src/users/application/use_cases/ — обработчики команд/запросов
 
-- [ ] Инфраструктура (ORM и репозитории)
+- [x] Инфраструктура (ORM и репозитории)
   - src/users/infrastructure/orm/models.py — кастомная модель User (на базе AbstractUser)
     - Поля: name (или first_name/last_name), email(unique), роли (например, JSON/ManyToMany/Choices/флаги)
   - src/users/infrastructure/repositories.py — Django-реализация IUserRepository
   - core/settings.py — AUTH_USER_MODEL = 'users.User'
   - src/users/infrastructure/admin.py — регистрация модели в админке
 
-- [ ] Интерфейсы (REST, JWT)
+- [x] Интерфейсы (REST, JWT)
   - src/users/interfaces/rest/serializers.py — RegisterSerializer, UserSerializer
   - src/users/interfaces/rest/views.py — RegisterView, LoginView (JWT cookie), LogoutView, MeView
   - src/users/interfaces/rest/permissions.py — IsHost, IsGuest
