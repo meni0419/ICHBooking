@@ -1,8 +1,9 @@
 # Слой domain: DTO для обмена данными между слоями (без зависимостей от Django)
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from enum import Enum, unique
+from typing import Optional, Sequence
 
 from .value_objects import HousingType
 
@@ -49,3 +50,38 @@ class UpdateAccommodationDTO:
     rooms: Optional[int] = None
     housing_type: Optional[HousingType] = None
     is_active: Optional[bool] = None
+
+
+@unique
+class SearchSort(Enum):
+    PRICE_ASC = "price_asc"
+    PRICE_DESC = "price_desc"
+    CREATED_AT_ASC = "created_at_asc"
+    CREATED_AT_DESC = "created_at_desc"
+
+
+@dataclass
+class SearchQueryDTO:
+    """
+    Параметры поиска:
+    - keyword: поиск по title/description
+    - price_min/max: в евро
+    - city/region: фильтр локации (DE фиксируется в домене)
+    - rooms_min/max: диапазон комнат
+    - housing_types: список HousingType для фильтра
+    - only_active: брать только активные объявления
+    - sort: вариант сортировки
+    - page/page_size: пагинация (на усмотрение application-слоя)
+    """
+    keyword: Optional[str] = None
+    price_min: Optional[float] = None
+    price_max: Optional[float] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
+    rooms_min: Optional[int] = None
+    rooms_max: Optional[int] = None
+    housing_types: Sequence[HousingType] = field(default_factory=list)
+    only_active: bool = True
+    sort: SearchSort = SearchSort.CREATED_AT_DESC
+    page: int = 1
+    page_size: int = 20
