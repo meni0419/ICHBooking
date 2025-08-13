@@ -64,13 +64,13 @@
 
 Цели: Регистрация, вход, роли (арендодатель/арендатор), разграничение прав.
 
-- [ ] Доменные модели и роли
+- [x] Доменные модели и роли
   - src/users/domain/entities.py — UserEntity (id, name, email, roles: {host, guest}, is_active)
   - src/users/domain/value_objects.py — Email, PasswordHash (при необходимости)
   - src/users/domain/repository_interfaces.py — IUserRepository (контракты поиска/создания)
   - src/users/domain/services.py — правила назначений ролей
 
-- [ ] Приложение (use-cases)
+- [x] Приложение (use-cases)
   - src/users/application/commands.py — RegisterUser, AssignRoles
   - src/users/application/queries.py — GetCurrentUser
   - src/users/application/use_cases/ — обработчики команд/запросов
