@@ -134,11 +134,11 @@
   - src/accommodations/domain/dtos.py — SearchQueryDTO (keyword, price_min/max, city/region, rooms_min/max, type, sort)
   - src/accommodations/domain/services.py — правила валидации запроса
 
-- 🔄 Приложение
+- ✅ Приложение
   - src/accommodations/application/queries.py — SearchAccommodations
   - src/accommodations/application/use_cases/ — обработчик поиска (делегирует в репозиторий; параметризует сортировку)
 
-- [ ] Инфраструктура
+- 🔄 Инфраструктура
   - src/accommodations/infrastructure/repositories.py — методы фильтрации по ORM (Q, annotate)
   - Индексы в БД: title, city/region, created_at, price
 
