@@ -14,18 +14,23 @@ from src.accommodations.interfaces.rest.serializers import (
     AccommodationCreateUpdateSerializer,
     AccommodationPartialUpdateSerializer,
     AccommodationDetailSerializer,
+    SearchQueryParamsSerializer,
+    SearchResultSerializer,
 )
 from src.accommodations.interfaces.rest.permissions import IsAuthenticatedAndActive, IsHost
 from src.accommodations.application.commands import (
     CreateAccommodationCommand, UpdateAccommodationCommand, DeleteAccommodationCommand, ToggleAvailabilityCommand
 )
-from src.accommodations.application.queries import GetAccommodationByIdQuery
+from src.accommodations.application.queries import GetAccommodationByIdQuery, SearchAccommodationsQuery
 from src.accommodations.application.use_cases.create_accommodation import CreateAccommodationUseCase
 from src.accommodations.application.use_cases.update_accommodation import UpdateAccommodationUseCase
 from src.accommodations.application.use_cases.delete_accommodation import DeleteAccommodationUseCase
 from src.accommodations.application.use_cases.toggle_availability import ToggleAvailabilityUseCase
 from src.accommodations.application.use_cases.get_accommodation import GetAccommodationByIdUseCase
+from src.accommodations.application.use_cases.search_accommodations import SearchAccommodationsUseCase
 from src.accommodations.application.mappers import to_dto
+from src.accommodations.domain.value_objects import HousingType
+from src.accommodations.domain.dtos import SearchSort
 from src.accommodations.infrastructure.repositories import DjangoAccommodationRepository
 
 
@@ -157,3 +162,54 @@ class ListMyAccommodationsView(APIView):
         accs = repo.list_by_owner(owner_id=request.user.id, active_only=False)
         data = [AccommodationDetailSerializer(to_dto(a)).data for a in accs]
         return Response(data, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["accommodations"],
+    parameters=[SearchQueryParamsSerializer],
+    responses={200: SearchResultSerializer},
+    operation_id="accommodations_search",
+    description="Поиск/фильтрация/сортировка объявлений. GET-запрос (CSRF не требуется).",
+)
+class SearchAccommodationsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        params = SearchQueryParamsSerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        v = params.validated_data
+
+        # Преобразование housing_types к Enum, sort к Enum
+        housing_types = [HousingType(ht) for ht in v.get("housing_types", [])] if v.get("housing_types") else []
+        sort = SearchSort(v.get("sort", SearchSort.CREATED_AT_DESC.value))
+
+        repo = DjangoAccommodationRepository()
+        use_case = SearchAccommodationsUseCase(repo)
+        result = use_case.execute(
+            SearchAccommodationsQuery(
+                keyword=v.get("keyword"),
+                price_min=v.get("price_min"),
+                price_max=v.get("price_max"),
+                city=v.get("city"),
+                region=v.get("region"),
+                rooms_min=v.get("rooms_min"),
+                rooms_max=v.get("rooms_max"),
+                housing_types=housing_types,
+                only_active=v.get("only_active", True),
+                sort=sort,
+                page=v.get("page", 1),
+                page_size=v.get("page_size", 20),
+            )
+        )
+
+        # Формируем ответ
+        items = [AccommodationDetailSerializer(dto).data for dto in result.items]
+        payload = {
+            "items": items,
+            "page": {
+                "page": result.page.page,
+                "page_size": result.page.page_size,
+                "total": result.page.total,
+            },
+        }
+        return Response(payload, status=status.HTTP_200_OK)
