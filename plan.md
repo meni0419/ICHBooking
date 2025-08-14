@@ -169,7 +169,7 @@
   - src/bookings/infrastructure/orm/models.py — ORM Booking (FK на User, Accommodation)
   - src/bookings/infrastructure/repositories.py — реализация IBookingRepository; проверки пересечений в запросах
 
-- 🔄 Интерфейсы (REST)
+- ✅ Интерфейсы (REST)
   - src/bookings/interfaces/rest/serializers.py — BookingCreateSerializer, BookingDetailSerializer
   - src/bookings/interfaces/rest/views.py — эндпоинты:
     - POST /bookings/ — создать
@@ -186,7 +186,7 @@
 
 Цели: Оставить отзыв к объявлению после завершённого бронирования; список отзывов.
 
-- [ ] Домейн
+- 🔄 Домейн
   - src/reviews/domain/entities.py — Review (id, accommodation_id, author_id, rating, text, created_at)
   - src/reviews/domain/dtos.py — ReviewDTO
   - src/reviews/domain/repository_interfaces.py — IReviewRepository
