@@ -1,13 +1,15 @@
 # Слой infrastructure: реализации репозиториев (Django ORM) адаптеры для domain.repository_interfaces
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple
 
 from django.contrib.auth import get_user_model
+from django.db.models import Q, QuerySet
 
 from src.accommodations.domain.entities import Accommodation as AccDomain
 from src.accommodations.domain.repository_interfaces import IAccommodationRepository
 from src.accommodations.domain.value_objects import Location, Price, RoomsCount, HousingType
+from src.accommodations.domain.dtos import SearchQueryDTO, SearchSort
 from src.accommodations.infrastructure.orm.models import Accommodation as AccORM
 
 User = get_user_model()
@@ -79,3 +81,59 @@ class DjangoAccommodationRepository(IAccommodationRepository):
         if owner_id is not None:
             qs = qs.filter(owner_id=owner_id)
         qs.delete()
+
+    def search(self, q: SearchQueryDTO) -> Tuple[list[AccDomain], int]:
+        qs: QuerySet[AccORM] = AccORM.objects.all()
+
+        # only_active
+        if q.only_active:
+            qs = qs.filter(is_active=True)
+
+        # keyword по title/description
+        if q.keyword:
+            kw = q.keyword
+            qs = qs.filter(Q(title__icontains=kw) | Q(description__icontains=kw))
+
+        # Локация: по city/region (case-insensitive, частичное совпадение)
+        if q.city:
+            qs = qs.filter(city__icontains=q.city)
+        if q.region:
+            qs = qs.filter(region__icontains=q.region)
+
+        # Цена (евро -> центы)
+        if q.price_min is not None:
+            qs = qs.filter(price_cents__gte=int(round(q.price_min * 100)))
+        if q.price_max is not None:
+            qs = qs.filter(price_cents__lte=int(round(q.price_max * 100)))
+
+        # Комнаты
+        if q.rooms_min is not None:
+            qs = qs.filter(rooms__gte=q.rooms_min)
+        if q.rooms_max is not None:
+            qs = qs.filter(rooms__lte=q.rooms_max)
+
+        # Типы жилья
+        if q.housing_types:
+            qs = qs.filter(housing_type__in=[t.value for t in q.housing_types])
+
+        # Сортировка
+        if q.sort == SearchSort.PRICE_ASC:
+            qs = qs.order_by("price_cents", "-id")
+        elif q.sort == SearchSort.PRICE_DESC:
+            qs = qs.order_by("-price_cents", "-id")
+        elif q.sort == SearchSort.CREATED_AT_ASC:
+            qs = qs.order_by("created_at", "id")
+        else:
+            # CREATED_AT_DESC (по умолчанию)
+            qs = qs.order_by("-created_at", "-id")
+
+        # Подсчёт total до пагинации
+        total = qs.count()
+
+        # Пагинация
+        page = max(1, q.page)
+        page_size = max(1, q.page_size)
+        offset = (page - 1) * page_size
+        items_qs = qs[offset: offset + page_size]
+
+        return ([_to_domain(o) for o in items_qs], total)

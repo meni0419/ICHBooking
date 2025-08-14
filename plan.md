@@ -115,7 +115,7 @@
   - src/accommodations/infrastructure/repositories.py — реализация IAccommodationRepository
   - src/accommodations/infrastructure/admin.py — регистрация модели
 
-- 🔄 Интерфейсы (REST)
+- ✅ Интерфейсы (REST)
   - src/accommodations/interfaces/rest/serializers.py — AccommodationCreateUpdateSerializer, AccommodationDetailSerializer
   - src/accommodations/interfaces/rest/views.py — ViewSet/классы для CRUD и toggle
     - Create/Update/Delete — только для host-владельца
@@ -130,19 +130,19 @@
 
 Цели: Поиск по ключевым словам в заголовке/описании, фильтрация и сортировка.
 
-- [ ] Домейн
+- ✅ Домейн
   - src/accommodations/domain/dtos.py — SearchQueryDTO (keyword, price_min/max, city/region, rooms_min/max, type, sort)
   - src/accommodations/domain/services.py — правила валидации запроса
 
-- [ ] Приложение
+- ✅ Приложение
   - src/accommodations/application/queries.py — SearchAccommodations
   - src/accommodations/application/use_cases/ — обработчик поиска (делегирует в репозиторий; параметризует сортировку)
 
-- [ ] Инфраструктура
+- ✅ Инфраструктура
   - src/accommodations/infrastructure/repositories.py — методы фильтрации по ORM (Q, annotate)
   - Индексы в БД: title, city/region, created_at, price
 
-- [ ] Интерфейсы (REST)
+- ✅ Интерфейсы (REST)
   - src/accommodations/interfaces/rest/filters.py — DRF фильтры/FilterSet
   - src/accommodations/interfaces/rest/views.py — endpoint поиска: /accommodations/search/
   - Поддержать сортировку: price asc/desc, created_at asc/desc
@@ -153,7 +153,7 @@
 
 Цели: Создание, просмотр своих, отмена, подтверждение/отклонение хостом.
 
-- [ ] Домейн
+- 🔄 Домейн
   - src/bookings/domain/entities.py — Booking (id, accommodation_id, guest_id, host_id, start_date, end_date, status: REQUESTED/CONFIRMED/CANCELLED/REJECTED, created_at)
   - src/bookings/domain/value_objects.py — StayPeriod (валидация дат)
   - src/bookings/domain/dtos.py — BookingDTO
