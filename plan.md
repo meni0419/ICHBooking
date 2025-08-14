@@ -153,14 +153,14 @@
 
 Цели: Создание, просмотр своих, отмена, подтверждение/отклонение хостом.
 
-- 🔄 Домейн
+- ✅ Домейн
   - src/bookings/domain/entities.py — Booking (id, accommodation_id, guest_id, host_id, start_date, end_date, status: REQUESTED/CONFIRMED/CANCELLED/REJECTED, created_at)
   - src/bookings/domain/value_objects.py — StayPeriod (валидация дат)
   - src/bookings/domain/dtos.py — BookingDTO
   - src/bookings/domain/repository_interfaces.py — IBookingRepository
   - src/bookings/domain/services.py — валидация пересечений дат, политика отмены
 
-- [ ] Приложение
+- 🔄 Приложение
   - src/bookings/application/commands.py — CreateBooking, CancelBooking, ConfirmBooking, RejectBooking
   - src/bookings/application/queries.py — ListMyBookings (guest), ListMyRequests (host)
   - src/bookings/application/use_cases/ — обработчики
