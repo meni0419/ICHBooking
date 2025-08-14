@@ -160,16 +160,16 @@
   - src/bookings/domain/repository_interfaces.py — IBookingRepository
   - src/bookings/domain/services.py — валидация пересечений дат, политика отмены
 
-- 🔄 Приложение
+- ✅ Приложение
   - src/bookings/application/commands.py — CreateBooking, CancelBooking, ConfirmBooking, RejectBooking
   - src/bookings/application/queries.py — ListMyBookings (guest), ListMyRequests (host)
   - src/bookings/application/use_cases/ — обработчики
 
-- [ ] Инфраструктура
+- ✅ Инфраструктура
   - src/bookings/infrastructure/orm/models.py — ORM Booking (FK на User, Accommodation)
   - src/bookings/infrastructure/repositories.py — реализация IBookingRepository; проверки пересечений в запросах
 
-- [ ] Интерфейсы (REST)
+- 🔄 Интерфейсы (REST)
   - src/bookings/interfaces/rest/serializers.py — BookingCreateSerializer, BookingDetailSerializer
   - src/bookings/interfaces/rest/views.py — эндпоинты:
     - POST /bookings/ — создать
