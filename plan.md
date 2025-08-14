@@ -153,23 +153,23 @@
 
 Цели: Создание, просмотр своих, отмена, подтверждение/отклонение хостом.
 
-- 🔄 Домейн
+- ✅ Домейн
   - src/bookings/domain/entities.py — Booking (id, accommodation_id, guest_id, host_id, start_date, end_date, status: REQUESTED/CONFIRMED/CANCELLED/REJECTED, created_at)
   - src/bookings/domain/value_objects.py — StayPeriod (валидация дат)
   - src/bookings/domain/dtos.py — BookingDTO
   - src/bookings/domain/repository_interfaces.py — IBookingRepository
   - src/bookings/domain/services.py — валидация пересечений дат, политика отмены
 
-- [ ] Приложение
+- ✅ Приложение
   - src/bookings/application/commands.py — CreateBooking, CancelBooking, ConfirmBooking, RejectBooking
   - src/bookings/application/queries.py — ListMyBookings (guest), ListMyRequests (host)
   - src/bookings/application/use_cases/ — обработчики
 
-- [ ] Инфраструктура
+- ✅ Инфраструктура
   - src/bookings/infrastructure/orm/models.py — ORM Booking (FK на User, Accommodation)
   - src/bookings/infrastructure/repositories.py — реализация IBookingRepository; проверки пересечений в запросах
 
-- [ ] Интерфейсы (REST)
+- ✅ Интерфейсы (REST)
   - src/bookings/interfaces/rest/serializers.py — BookingCreateSerializer, BookingDetailSerializer
   - src/bookings/interfaces/rest/views.py — эндпоинты:
     - POST /bookings/ — создать
@@ -186,7 +186,7 @@
 
 Цели: Оставить отзыв к объявлению после завершённого бронирования; список отзывов.
 
-- [ ] Домейн
+- 🔄 Домейн
   - src/reviews/domain/entities.py — Review (id, accommodation_id, author_id, rating, text, created_at)
   - src/reviews/domain/dtos.py — ReviewDTO
   - src/reviews/domain/repository_interfaces.py — IReviewRepository
