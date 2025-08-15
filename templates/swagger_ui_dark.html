@@ -1,0 +1,180 @@
+<!-- HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Docs (Dark)</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            background: #0f151a;
+            color: #e6edf3;
+        }
+
+        .swagger-ui {
+            --text-color: #e6edf3;
+            --text-color-secondary: #9fb1c1;
+            --border-color: #2b3945;
+            --primary-color: #6bb1ff;
+            --link-color: #76c0ff;
+            --btn-primary-bg: #1f6feb;
+            --btn-primary-hover-bg: #316dca;
+            --section-bg: #0f151a;
+        }
+
+        .swagger-ui .opblock {
+            background: #0f151a;
+            border-color: var(--border-color);
+        }
+
+        .swagger-ui .topbar {
+            background: #0f151a;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .swagger-ui .info,
+        .swagger-ui .scheme-container,
+        .swagger-ui .authorization__btn {
+            color: var(--text-color);
+        }
+
+        .swagger-ui .opblock-tag,
+        .swagger-ui .model-title,
+        .swagger-ui .parameter__name,
+        .swagger-ui .parameter__type,
+        .swagger-ui .prop-format,
+        .swagger-ui .opblock-summary-method,
+        .swagger-ui .opblock-summary-path,
+        .swagger-ui .opblock-summary-description {
+            color: var(--text-color);
+        }
+
+        .swagger-ui .tab li,
+        .swagger-ui .response-col_status,
+        .swagger-ui .response-col_description__inner,
+        .swagger-ui .model,
+        .swagger-ui .model .property,
+        .swagger-ui .response-col_links,
+        .swagger-ui table thead tr th,
+        .swagger-ui table tbody tr td {
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+
+        .swagger-ui a, .swagger-ui a:visited {
+            color: var(--link-color);
+        }
+
+        .swagger-ui .btn.execute {
+            background-color: var(--btn-primary-bg);
+        }
+
+        .swagger-ui .btn.execute:hover {
+            background-color: var(--btn-primary-hover-bg);
+        }
+
+        .swagger-ui .copy-to-clipboard {
+            filter: invert(1) hue-rotate(180deg);
+        }
+
+        .swagger-ui .opblock .opblock-summary {
+            background: #0f151a;
+            border-color: var(--border-color);
+        }
+
+        .swagger-ui textarea, .swagger-ui input, .swagger-ui select {
+            background: #0f151a;
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+
+        .swagger-ui .model-box-control, .swagger-ui .model-toggle {
+            filter: invert(1) hue-rotate(180deg);
+        }
+
+        .swagger-ui .info .title {
+            color: var(--text-color);
+        }
+
+        .swagger-ui .info h1, .swagger-ui .info h2, .swagger-ui .info h3, .swagger-ui .info h4, .swagger-ui .info h5, .swagger-ui .info li, .swagger-ui .info p, .swagger-ui .info table {
+            color: #9fb1c1;
+        }
+
+        .swagger-ui a.nostyle, .swagger-ui a.nostyle:visited {
+            color: var(--text-color);
+        }
+
+        .swagger-ui .opblock-description-wrapper p, .swagger-ui .opblock-external-docs-wrapper p, .swagger-ui .opblock-title_normal p {
+            color: var(--text-color);
+        }
+
+        .swagger-ui table thead tr td, .swagger-ui table thead tr th {
+            color: var(--text-color);
+        }
+
+        .swagger-ui .responses-inner h4, .swagger-ui .responses-inner h5 {
+            color: var(--text-color);
+        }
+
+        .swagger-ui section.models h4 span {
+            color: var(--text-color);
+        }
+
+        .swagger-ui .authorization__btn {
+            background: var(--text-color);
+            border: none;
+            padding: 0 5px;
+        }
+
+        .swagger-ui .opblock-control-arrow {
+            background: var(--text-color);
+            border: none;
+            text-align: center;
+            padding: 0 5px;
+        }
+
+        .swagger-ui .opblock .opblock-summary-operation-id {
+            color: var(--text-color-secondary)
+        }
+
+        .swagger-ui .scheme-container {
+            background: #141d25;
+        }
+        .swagger-ui .expand-methods, .swagger-ui .expand-operation {
+            background: var(--text-color);
+        }
+
+        .swagger-ui .opblock-tag, .swagger-ui .model-title, .swagger-ui .parameter__name, .swagger-ui .parameter__type, .swagger-ui .prop-format, .swagger-ui .opblock-summary-method, .swagger-ui .opblock-summary-path, .swagger-ui .opblock-summary-description {
+            background: #141d25;
+        }
+        .swagger-ui .model-box-control, .swagger-ui .model-toggle {
+            color: var(--text-color);
+        }
+        .swagger-ui .tab li, .swagger-ui .response-col_status, .swagger-ui .response-col_description__inner, .swagger-ui .model, .swagger-ui .model .property, .swagger-ui .response-col_links, .swagger-ui table thead tr th, .swagger-ui table tbody tr td {
+            background: #afc9de;
+        }
+    </style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+    window.onload = () => {
+        window.ui = SwaggerUIBundle({
+            url: "{% url 'schema' %}",
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            displayOperationId: true,
+            showExtensions: true,
+            showCommonExtensions: true,
+            tryItOutEnabled: true,
+            persistAuthorization: true
+        });
+    };
+</script>
+</body>
+</html>

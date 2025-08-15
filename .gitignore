@@ -18,7 +18,7 @@ __pycache__/
 .Python
 
 staticfiles/
-tests/
+# tests/
 media/
 build/
 develop-eggs/
@@ -48,6 +48,8 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+init.py
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -62,6 +64,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+users_for_tests.py
 
 # Translations
 *.mo
