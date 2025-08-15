@@ -22,6 +22,7 @@ class AccommodationDTO:
     rooms: int
     housing_type: HousingType
     is_active: bool
+    impressions_count: int
 
 
 @dataclass
@@ -58,6 +59,7 @@ class SearchSort(Enum):
     PRICE_DESC = "price_desc"
     CREATED_AT_ASC = "created_at_asc"
     CREATED_AT_DESC = "created_at_desc"
+    POPULAR = "popular"
 
 
 @dataclass

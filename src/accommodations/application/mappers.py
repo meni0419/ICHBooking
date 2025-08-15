@@ -17,4 +17,5 @@ def to_dto(acc: Accommodation) -> AccommodationDTO:
         rooms=acc.rooms.value,
         housing_type=acc.housing_type,
         is_active=acc.is_active,
+        impressions_count=acc.impressions_count
     )

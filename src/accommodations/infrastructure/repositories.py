@@ -4,7 +4,8 @@ from __future__ import annotations
 from typing import Iterable, Optional, Tuple
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q, QuerySet
+from django.db import transaction
+from django.db.models import Q, QuerySet, F, Count
 
 from src.accommodations.domain.entities import Accommodation as AccDomain
 from src.accommodations.domain.repository_interfaces import IAccommodationRepository
@@ -28,6 +29,7 @@ def _to_domain(obj: AccORM) -> AccDomain:
         is_active=obj.is_active,
         created_at=obj.created_at,
         updated_at=obj.updated_at,
+        impressions_count=obj.impressions_count
     )
 
 
@@ -90,11 +92,11 @@ class DjangoAccommodationRepository(IAccommodationRepository):
             qs = qs.filter(is_active=True)
 
         # keyword по title/description
-        if q.keyword:
-            kw = q.keyword
-            qs = qs.filter(Q(title__icontains=kw) | Q(description__icontains=kw))
+        keyword = (q.keyword or "").strip()
+        if keyword:
+            qs = qs.filter(Q(title__icontains=keyword) | Q(description__icontains=keyword))
 
-        # Локация: по city/region (case-insensitive, частичное совпадение)
+        # Локация
         if q.city:
             qs = qs.filter(city__icontains=q.city)
         if q.region:
@@ -116,6 +118,28 @@ class DjangoAccommodationRepository(IAccommodationRepository):
         if q.housing_types:
             qs = qs.filter(housing_type__in=[t.value for t in q.housing_types])
 
+        # Подсчёт total до пагинации/сортировки
+        total = qs.count()
+
+        # Увеличиваем показы, если запрос содержит хотя бы ОДИН параметр/фильтр.
+        # Параметры, которые считаем фильтрами: keyword, city, region, price_min/max, rooms_min/max, housing_types.
+        has_filters = any([
+            bool(keyword),
+            bool(q.city),
+            bool(q.region),
+            q.price_min is not None,
+            q.price_max is not None,
+            q.rooms_min is not None,
+            q.rooms_max is not None,
+            bool(q.housing_types),
+        ])
+        if has_filters and total > 0:
+            # Инкрементируем impressions_count всем найденным (без учёта пагинации).
+            # Используем отдельный фильтр по id__in, чтобы избежать проблем с ORDER BY/ANNOTATE в UPDATE.
+            ids = list(qs.values_list("id", flat=True))
+            with transaction.atomic():
+                AccORM.objects.filter(id__in=ids).update(impressions_count=F("impressions_count") + 1)
+
         # Сортировка
         if q.sort == SearchSort.PRICE_ASC:
             qs = qs.order_by("price_cents", "-id")
@@ -123,12 +147,10 @@ class DjangoAccommodationRepository(IAccommodationRepository):
             qs = qs.order_by("-price_cents", "-id")
         elif q.sort == SearchSort.CREATED_AT_ASC:
             qs = qs.order_by("created_at", "id")
+        elif q.sort == SearchSort.POPULAR:
+            qs = qs.order_by("-impressions_count", "-created_at", "-id")
         else:
-            # CREATED_AT_DESC (по умолчанию)
             qs = qs.order_by("-created_at", "-id")
-
-        # Подсчёт total до пагинации
-        total = qs.count()
 
         # Пагинация
         page = max(1, q.page)

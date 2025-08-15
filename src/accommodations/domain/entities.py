@@ -26,6 +26,7 @@ class Accommodation:
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    impressions_count: int = 0
 
     def rename(self, new_title: str) -> None:
         if not new_title or len(new_title.strip()) < 3:
