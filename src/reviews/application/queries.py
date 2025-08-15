@@ -8,6 +8,7 @@ from dataclasses import dataclass
 class ListReviewsForAccommodationQuery:
     accommodation_id: int
 
+
 @dataclass(frozen=True)
 class ListMyReviewsQuery:
     author_id: int

@@ -197,11 +197,11 @@
   - src/reviews/application/queries.py — ListReviewsForAccommodation
   - src/reviews/application/use_cases/ — обработчики
 
-- 🔄 Инфраструктура
+- ✅ Инфраструктура
   - src/reviews/infrastructure/orm/models.py — ORM Review
   - src/reviews/infrastructure/repositories.py — реализация IReviewRepository
 
-- [ ] Интерфейсы (REST)
+- ✅ Интерфейсы (REST)
   - src/reviews/interfaces/rest/serializers.py — ReviewCreateSerializer, ReviewSerializer
   - src/reviews/interfaces/rest/views.py — POST /reviews/, GET /accommodations/{id}/reviews/
   - Права: автор — только гость с завершённым бронированием данного объявления
@@ -211,7 +211,7 @@
 ## Этап 6. Дополнительные требования
 
 ### 6.1. Популярность
-- [ ] Подсчёт просмотров/отзывов для сортировки
+- 🔄 Подсчёт просмотров/отзывов для сортировки
   - Инфраструктура: агрегирующие запросы
   - Интерфейсы: параметр sort=popular
 
