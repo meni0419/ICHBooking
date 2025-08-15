@@ -186,18 +186,18 @@
 
 Цели: Оставить отзыв к объявлению после завершённого бронирования; список отзывов.
 
-- 🔄 Домейн
+- ✅ Домейн
   - src/reviews/domain/entities.py — Review (id, accommodation_id, author_id, rating, text, created_at)
   - src/reviews/domain/dtos.py — ReviewDTO
   - src/reviews/domain/repository_interfaces.py — IReviewRepository
   - src/reviews/domain/services.py — политика: отзыв можно оставить только гостю, у которого было завершённое бронирование
 
-- [ ] Приложение
+- ✅ Приложение
   - src/reviews/application/commands.py — CreateReview
   - src/reviews/application/queries.py — ListReviewsForAccommodation
   - src/reviews/application/use_cases/ — обработчики
 
-- [ ] Инфраструктура
+- 🔄 Инфраструктура
   - src/reviews/infrastructure/orm/models.py — ORM Review
   - src/reviews/infrastructure/repositories.py — реализация IReviewRepository
 
