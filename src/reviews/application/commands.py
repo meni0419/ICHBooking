@@ -26,3 +26,8 @@ class UpdateReviewCommand:
 class DeleteReviewCommand:
     review_id: int
     actor_user_id: int
+
+@dataclass(frozen=True)
+class GetReviewCommand:
+    review_id: int
+    actor_user_id: int
