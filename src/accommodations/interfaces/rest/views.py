@@ -32,6 +32,7 @@ from src.accommodations.application.mappers import to_dto
 from src.accommodations.domain.value_objects import HousingType
 from src.accommodations.domain.dtos import SearchSort
 from src.accommodations.infrastructure.repositories import DjangoAccommodationRepository
+from src.common.infrastructure.repositories import log_search_query
 
 
 @extend_schema(
@@ -179,7 +180,6 @@ class SearchAccommodationsView(APIView):
         params.is_valid(raise_exception=True)
         v = params.validated_data
 
-        # Преобразование housing_types к Enum, sort к Enum
         housing_types = [HousingType(ht) for ht in v.get("housing_types", [])] if v.get("housing_types") else []
         sort = SearchSort(v.get("sort", SearchSort.CREATED_AT_DESC.value))
 
@@ -202,14 +202,33 @@ class SearchAccommodationsView(APIView):
             )
         )
 
-        # Формируем ответ
+        # Логируем историю поиска ТОЛЬКО если был хотя бы один фильтр/keyword
+        has_filters = any([
+            bool((v.get("keyword") or "").strip()),
+            bool((v.get("city") or "").strip()),
+            bool((v.get("region") or "").strip()),
+            v.get("price_min") is not None,
+            v.get("price_max") is not None,
+            v.get("rooms_min") is not None,
+            v.get("rooms_max") is not None,
+            bool(v.get("housing_types")),
+        ])
+        if has_filters:
+            log_search_query(
+                user_id=request.user.id if getattr(request, "user", None) and request.user.is_authenticated else None,
+                keyword=v.get("keyword"),
+                city=v.get("city"),
+                region=v.get("region"),
+                price_min=v.get("price_min"),
+                price_max=v.get("price_max"),
+                rooms_min=v.get("rooms_min"),
+                rooms_max=v.get("rooms_max"),
+                housing_types=v.get("housing_types") or [],
+            )
+
         items = [AccommodationDetailSerializer(dto).data for dto in result.items]
         payload = {
             "items": items,
-            "page": {
-                "page": result.page.page,
-                "page_size": result.page.page_size,
-                "total": result.page.total,
-            },
+            "page": {"page": result.page.page, "page_size": result.page.page_size, "total": result.page.total},
         }
         return Response(payload, status=status.HTTP_200_OK)
