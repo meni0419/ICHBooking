@@ -108,6 +108,10 @@ if DB_ENGINE == "mysql":
             # Для связи контейнер-контейнер важно указать 3306.
             "PORT": "3306" if os.getenv("DB_HOST", "db") == "db" else os.getenv("DB_PORT", "33063"),
             "OPTIONS": {"charset": "utf8mb4"},
+            "TEST": {
+                # Явно задаём имя тестовой БД
+                "NAME": os.getenv("DB_TEST_NAME", f"test_{os.getenv('DB_NAME', 'ichbooking')}"),
+            },
         }
     }
 else:
