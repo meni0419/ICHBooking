@@ -1,13 +1,13 @@
 # Слой infrastructure: реализации репозиториев (Django ORM), адаптеры для domain.repository_interfaces
-# src/common/infrastructure/repositories.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode
 
-from django.db.models import Count, QuerySet, Max  # добавили Max
+from django.db.models import Count, QuerySet, Max
 
-from src.common.infrastructure.orm.models import SearchQueryLog
+from src.common.infrastructure.orm.models import SearchQueryLog, ListingViewLog
+from django.db import transaction
 
 
 def _norm_str(x: Optional[str]) -> str:
@@ -149,3 +149,9 @@ def list_popular_queries(limit: int = 10) -> List[Dict[str, Any]]:
             {"count": row["count"], "params": params, "querystring": querystring}
         )
     return results
+
+
+def log_listing_view(*, accommodation_id: int, user_id: Optional[int]) -> None:
+    # Простая запись лога просмотра (без дедупликаций)
+    with transaction.atomic():
+        ListingViewLog.objects.create(accommodation_id=accommodation_id, user_id=user_id or None)

@@ -38,3 +38,33 @@ class SearchQueryLog(models.Model):
 
     def __str__(self) -> str:
         return f"SearchLog[{self.query_signature}]"
+
+class ListingViewLog(models.Model):
+    """
+    Лог фактов просмотра объявления.
+    user — опционально (анонимные просмотры тоже считаем).
+    """
+    accommodation = models.ForeignKey(
+        "accommodations.Accommodation",
+        on_delete=models.CASCADE,
+        related_name="view_logs",
+        db_index=True,
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="listing_views",
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "listing_view_logs"
+        indexes = [
+            models.Index(fields=["accommodation", "created_at"]),
+            models.Index(fields=["user", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"ViewLog acc={self.accommodation_id} by={self.user_id or 'anon'}"

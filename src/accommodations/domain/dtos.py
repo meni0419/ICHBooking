@@ -23,6 +23,8 @@ class AccommodationDTO:
     housing_type: HousingType
     is_active: bool
     impressions_count: int
+    views_count: int
+    comments_count: int
 
 
 @dataclass
@@ -60,6 +62,8 @@ class SearchSort(Enum):
     CREATED_AT_ASC = "created_at_asc"
     CREATED_AT_DESC = "created_at_desc"
     POPULAR = "popular"
+    VIEWS = "views"
+    COMMENTS = "comments"
 
 
 @dataclass

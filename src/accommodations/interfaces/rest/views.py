@@ -32,7 +32,7 @@ from src.accommodations.application.mappers import to_dto
 from src.accommodations.domain.value_objects import HousingType
 from src.accommodations.domain.dtos import SearchSort
 from src.accommodations.infrastructure.repositories import DjangoAccommodationRepository
-from src.common.infrastructure.repositories import log_search_query
+from src.common.infrastructure.repositories import log_search_query, log_listing_view
 
 
 @extend_schema(
@@ -97,7 +97,14 @@ class AccommodationDetailView(APIView):
     def get(self, request, acc_id: int):
         repo = DjangoAccommodationRepository()
         dto = GetAccommodationByIdUseCase(repo).execute(GetAccommodationByIdQuery(id=acc_id))
-        return Response(AccommodationDetailSerializer(dto).data, status=status.HTTP_200_OK)
+
+        user_id = request.user.id if getattr(request, "user", None) and request.user.is_authenticated else None
+        log_listing_view(accommodation_id=acc_id, user_id=user_id)
+        repo.increment_views(acc_id=acc_id)
+
+        data = AccommodationDetailSerializer(dto).data
+        data["views_count"] = data.get("views_count", 0) + 1
+        return Response(data, status=status.HTTP_200_OK)
 
     def patch(self, request, acc_id: int):
         ser = AccommodationPartialUpdateSerializer(data=request.data, partial=True)
