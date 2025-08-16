@@ -4,7 +4,8 @@ from __future__ import annotations
 from typing import Iterable, Optional, Tuple
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q, QuerySet
+from django.db import transaction
+from django.db.models import Q, QuerySet, F, Count
 
 from src.accommodations.domain.entities import Accommodation as AccDomain
 from src.accommodations.domain.repository_interfaces import IAccommodationRepository
@@ -28,6 +29,9 @@ def _to_domain(obj: AccORM) -> AccDomain:
         is_active=obj.is_active,
         created_at=obj.created_at,
         updated_at=obj.updated_at,
+        impressions_count=obj.impressions_count,
+        views_count=obj.views_count,
+        comments_count=getattr(obj, "review_count", 0),
     )
 
 
@@ -47,7 +51,8 @@ def _apply_domain(acc: AccDomain, obj: AccORM) -> AccORM:
 class DjangoAccommodationRepository(IAccommodationRepository):
     def get_by_id(self, acc_id: int) -> Optional[AccDomain]:
         try:
-            return _to_domain(AccORM.objects.get(pk=acc_id))
+            qs = AccORM.objects.filter(pk=acc_id).annotate(review_count=Count("reviews"))
+            return _to_domain(qs.get())
         except AccORM.DoesNotExist:
             return None
 
@@ -55,26 +60,24 @@ class DjangoAccommodationRepository(IAccommodationRepository):
         qs = AccORM.objects.filter(owner_id=owner_id)
         if active_only:
             qs = qs.filter(is_active=True)
-        return [_to_domain(o) for o in qs.order_by("-created_at")]
+        qs = qs.annotate(review_count=Count("reviews")).order_by("-created_at")
+        return [_to_domain(o) for o in qs]
 
     def search_ids(self, ids: Iterable[int]) -> list[AccDomain]:
-        qs = AccORM.objects.filter(id__in=list(ids))
+        qs = AccORM.objects.filter(id__in=list(ids)).annotate(review_count=Count("reviews"))
         return [_to_domain(o) for o in qs]
 
     def create(self, acc: AccDomain) -> AccDomain:
-        obj = AccORM(
-            owner_id=acc.owner_id,
-        )
+        obj = AccORM(owner_id=acc.owner_id)
         obj = _apply_domain(acc, obj)
         obj.save()
-        return _to_domain(obj)
+        return _to_domain(AccORM.objects.annotate(review_count=Count("reviews")).get(pk=obj.id))
 
     def update(self, acc: AccDomain) -> AccDomain:
         obj = AccORM.objects.get(pk=acc.id)
-        # Дополнительно можно убедиться, что owner_id не меняли
         obj = _apply_domain(acc, obj)
         obj.save()
-        return _to_domain(obj)
+        return _to_domain(AccORM.objects.annotate(review_count=Count("reviews")).get(pk=obj.id))
 
     def delete(self, acc_id: int, owner_id: Optional[int] = None) -> None:
         qs = AccORM.objects.filter(pk=acc_id)
@@ -82,55 +85,58 @@ class DjangoAccommodationRepository(IAccommodationRepository):
             qs = qs.filter(owner_id=owner_id)
         qs.delete()
 
+    def increment_views(self, acc_id: int) -> None:
+        AccORM.objects.filter(pk=acc_id).update(views_count=F("views_count") + 1)
+
     def search(self, q: SearchQueryDTO) -> Tuple[list[AccDomain], int]:
         qs: QuerySet[AccORM] = AccORM.objects.all()
 
-        # only_active
         if q.only_active:
             qs = qs.filter(is_active=True)
 
-        # keyword по title/description
-        if q.keyword:
-            kw = q.keyword
-            qs = qs.filter(Q(title__icontains=kw) | Q(description__icontains=kw))
+        keyword = (q.keyword or "").strip()
+        if keyword:
+            qs = qs.filter(Q(title__icontains=keyword) | Q(description__icontains=keyword))
 
-        # Локация: по city/region (case-insensitive, частичное совпадение)
         if q.city:
             qs = qs.filter(city__icontains=q.city)
         if q.region:
             qs = qs.filter(region__icontains=q.region)
 
-        # Цена (евро -> центы)
         if q.price_min is not None:
             qs = qs.filter(price_cents__gte=int(round(q.price_min * 100)))
         if q.price_max is not None:
             qs = qs.filter(price_cents__lte=int(round(q.price_max * 100)))
 
-        # Комнаты
         if q.rooms_min is not None:
             qs = qs.filter(rooms__gte=q.rooms_min)
         if q.rooms_max is not None:
             qs = qs.filter(rooms__lte=q.rooms_max)
 
-        # Типы жилья
         if q.housing_types:
             qs = qs.filter(housing_type__in=[t.value for t in q.housing_types])
 
-        # Сортировка
+        total = qs.count()
+
+        # Для выдачи добавляем количество отзывов
+        qs = qs.annotate(review_count=Count("reviews"))
+
+        # Сортировки
         if q.sort == SearchSort.PRICE_ASC:
             qs = qs.order_by("price_cents", "-id")
         elif q.sort == SearchSort.PRICE_DESC:
             qs = qs.order_by("-price_cents", "-id")
         elif q.sort == SearchSort.CREATED_AT_ASC:
             qs = qs.order_by("created_at", "id")
+        elif q.sort == SearchSort.POPULAR:
+            qs = qs.order_by("-impressions_count", "-created_at", "-id")
+        elif q.sort == SearchSort.VIEWS:
+            qs = qs.order_by("-views_count", "-created_at", "-id")
+        elif q.sort == SearchSort.COMMENTS:
+            qs = qs.order_by("-review_count", "-created_at", "-id")
         else:
-            # CREATED_AT_DESC (по умолчанию)
             qs = qs.order_by("-created_at", "-id")
 
-        # Подсчёт total до пагинации
-        total = qs.count()
-
-        # Пагинация
         page = max(1, q.page)
         page_size = max(1, q.page_size)
         offset = (page - 1) * page_size

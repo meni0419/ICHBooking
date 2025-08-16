@@ -1,6 +1,8 @@
 # Слой infrastructure: Django модели ORM, связанные с domain через маппинг
 from __future__ import annotations
 
+from typing import Any
+
 from django.conf import settings
 from django.db import models
 
@@ -33,6 +35,8 @@ class Accommodation(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
+    impressions_count = models.BigIntegerField(default=0, db_index=True)
+    views_count = models.BigIntegerField(default=0, db_index=True)
 
     class Meta:
         db_table = "accommodations"
