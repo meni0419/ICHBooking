@@ -4,13 +4,20 @@ from __future__ import annotations
 from datetime import date
 
 from django.utils.decorators import method_decorator
+
 from django.views.decorators.csrf import csrf_protect
+
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from src.common.interfaces.permissions import IsAuthenticatedAndActive
+
+from src.shared.errors import ApplicationError
+from src.shared.interfaces.api_errors import response_from_app_error
+
 from src.users.interfaces.rest.permissions import IsGuest, IsHost
 
 from src.bookings.interfaces.rest.serializers import BookingCreateSerializer, BookingDetailSerializer
@@ -68,7 +75,6 @@ class CreateBookingView(APIView):
         ser.is_valid(raise_exception=True)
         accommodation_id = ser.validated_data["accommodation_id"]
 
-        # Получаем host_id по объявлению
         acc_repo = DjangoAccommodationRepository()
         acc = acc_repo.get_by_id(accommodation_id)
         if not acc:
@@ -82,7 +88,14 @@ class CreateBookingView(APIView):
             end_date=ser.validated_data["end_date"],
         )
         repo = DjangoBookingRepository()
-        dto = CreateBookingUseCase(repo).execute(cmd)
+        try:
+            dto = CreateBookingUseCase(repo).execute(cmd)
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ApplicationError as e:
+            return response_from_app_error(e)
         return Response(BookingDetailSerializer(dto).data, status=status.HTTP_201_CREATED)
 
 
@@ -129,7 +142,14 @@ class ConfirmBookingView(APIView):
     def post(self, request, booking_id: int):
         repo = DjangoBookingRepository()
         cmd = ConfirmBookingCommand(booking_id=booking_id, actor_user_id=request.user.id)
-        dto = ConfirmBookingUseCase(repo).execute(cmd)
+        try:
+            dto = ConfirmBookingUseCase(repo).execute(cmd)
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ApplicationError as e:
+            return response_from_app_error(e)
         return Response(BookingDetailSerializer(dto).data, status=status.HTTP_200_OK)
 
 
@@ -146,7 +166,14 @@ class RejectBookingView(APIView):
     def post(self, request, booking_id: int):
         repo = DjangoBookingRepository()
         cmd = RejectBookingCommand(booking_id=booking_id, actor_user_id=request.user.id)
-        dto = RejectBookingUseCase(repo).execute(cmd)
+        try:
+            dto = RejectBookingUseCase(repo).execute(cmd)
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ApplicationError as e:
+            return response_from_app_error(e)
         return Response(BookingDetailSerializer(dto).data, status=status.HTTP_200_OK)
 
 
@@ -167,5 +194,12 @@ class CancelBookingView(APIView):
             actor_user_id=request.user.id,
             today=date.today(),
         )
-        dto = CancelBookingUseCase(repo).execute(cmd)
+        try:
+            dto = CancelBookingUseCase(repo).execute(cmd)
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ApplicationError as e:
+            return response_from_app_error(e)
         return Response(BookingDetailSerializer(dto).data, status=status.HTTP_200_OK)

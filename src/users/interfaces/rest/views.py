@@ -81,6 +81,24 @@ def _clear_jwt_cookies(response: Response):
     response.delete_cookie(refresh_name, path="/")
 
 
+def _normalize_roles(roles) -> list[str]:
+    """
+    Превращает набор/список ролей (enum или строки) в список строковых значений: ["guest", "host"].
+    """
+    result: list[str] = []
+    for r in roles or []:
+        if hasattr(r, "value"):
+            result.append(r.value)  # enum UserRole
+        else:
+            rs = str(r)
+            # Возможные представления: "UserRole.GUEST" -> "guest"
+            if rs.startswith("UserRole."):
+                result.append(rs.split(".", 1)[1].lower())
+            else:
+                result.append(rs.lower())
+    return result
+
+
 @extend_schema(
     request=RegisterSerializer,
     responses={201: UserSerializer},
@@ -112,11 +130,14 @@ class RegisterView(APIView):
                 initial_roles=initial_roles,
             )
         )
-        return Response(UserSerializer(dto).data, status=status.HTTP_201_CREATED)
+        payload = UserSerializer(dto).data
+        payload["roles"] = _normalize_roles(dto.roles)
+        return Response(payload, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(
-    request={"application/json": {"type": "object", "properties": {"email": {"type": "string"}, "password": {"type": "string"}}}},
+    request={"application/json": {"type": "object",
+                                  "properties": {"email": {"type": "string"}, "password": {"type": "string"}}}},
     responses={200: OpenApiResponse(description="Login successful (JWT cookies set)")},
     tags=["auth"],
     operation_id="auth_login",
@@ -171,7 +192,7 @@ class RefreshByCookieView(APIView):
     description="Логаут. Очищает куки и отправляет refresh в blacklist.",
 )
 class LogoutView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         try:
@@ -196,10 +217,13 @@ class MeView(APIView):
         users_repo = DjangoUserRepository()
         use_case = GetCurrentUserUseCase(users=users_repo)
         dto = use_case.execute(GetCurrentUserQuery(user_id=request.user.id))
-        return Response(UserSerializer(dto).data, status=status.HTTP_200_OK)
+        payload = UserSerializer(dto).data
+        payload["roles"] = _normalize_roles(dto.roles)
+        return Response(payload, status=status.HTTP_200_OK)
 
 
-@extend_schema(request=RoleActionSerializer, responses={200: UserSerializer}, tags=["auth"], operation_id="auth_role_add")
+@extend_schema(request=RoleActionSerializer, responses={200: UserSerializer}, tags=["auth"],
+               operation_id="auth_role_add")
 class AddRoleView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -211,10 +235,13 @@ class AddRoleView(APIView):
         users_repo = DjangoUserRepository()
         use_case = AddRoleUseCase(users=users_repo)
         dto = use_case.execute(AddRoleCommand(user_id=request.user.id, role=role))
-        return Response(UserSerializer(dto).data, status=status.HTTP_200_OK)
+        payload = UserSerializer(dto).data
+        payload["roles"] = _normalize_roles(dto.roles)
+        return Response(payload, status=status.HTTP_200_OK)
 
 
-@extend_schema(request=RoleActionSerializer, responses={200: UserSerializer}, tags=["auth"], operation_id="auth_role_remove")
+@extend_schema(request=RoleActionSerializer, responses={200: UserSerializer}, tags=["auth"],
+               operation_id="auth_role_remove")
 class RemoveRoleView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -226,4 +253,6 @@ class RemoveRoleView(APIView):
         users_repo = DjangoUserRepository()
         use_case = RemoveRoleUseCase(users=users_repo)
         dto = use_case.execute(RemoveRoleCommand(user_id=request.user.id, role=role))
-        return Response(UserSerializer(dto).data, status=status.HTTP_200_OK)
+        payload = UserSerializer(dto).data
+        payload["roles"] = _normalize_roles(dto.roles)
+        return Response(payload, status=status.HTTP_200_OK)

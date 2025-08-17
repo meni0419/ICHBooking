@@ -118,6 +118,22 @@ class DjangoAccommodationRepository(IAccommodationRepository):
 
         total = qs.count()
 
+        # Инкремент показов для всех найденных, но только если есть хоть один фильтр/keyword
+        has_filters = any([
+            bool(keyword),
+            bool(q.city),
+            bool(q.region),
+            q.price_min is not None,
+            q.price_max is not None,
+            q.rooms_min is not None,
+            q.rooms_max is not None,
+            bool(q.housing_types),
+        ])
+        if has_filters and total > 0:
+            ids = list(qs.values_list("id", flat=True))
+            with transaction.atomic():
+                AccORM.objects.filter(id__in=ids).update(impressions_count=F("impressions_count") + 1)
+
         # Для выдачи добавляем количество отзывов
         qs = qs.annotate(review_count=Count("reviews"))
 

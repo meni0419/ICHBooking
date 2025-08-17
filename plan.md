@@ -1,16 +1,19 @@
 # ICHBooking — План проекта (ROADMAP)
 
 Цели:
+
 - Реализовать функционал по требованиям (обязательные, дополнительные).
 - Следовать чистой архитектуре: domain / application / infrastructure / interfaces.
 - Использовать DRF, JWT (в куках), MySQL; позже — Docker и деплой на AWS.
 
 Статусные теги:
+
 - [ ] Не начато
 - 🔄 В процессе
 - ✅ Готово
 
 Навигация:
+
 - Этап 0. Инфраструктура и зависимости
 - Этап 1. Пользователи, аутентификация и авторизация (обязательно)
 - Этап 2. Объявления (CRUD + доступность) (обязательно)
@@ -29,31 +32,33 @@
 Задача: Подготовить окружение, пакеты, настройки.
 
 - ✅ Переключение на MySQL
-  - Настройки: core/settings.py (DATABASES)
-  - Установить драйвер: mysqlclient (или PyMySQL)
-  - Создать базу данных ICHBooking в MySQL, настроить доступы в ENV.
-  - Миграции: python manage.py makemigrations && migrate
+    - Настройки: core/settings.py (DATABASES)
+    - Установить драйвер: mysqlclient (или PyMySQL)
+    - Создать базу данных ICHBooking в MySQL, настроить доступы в ENV.
+    - Миграции: python manage.py makemigrations && migrate
 
 - ✅ Подключение DRF
-  - Установить djangorestframework
-  - core/settings.py: добавить 'rest_framework' и базовые REST_FRAMEWORK настройки
+    - Установить djangorestframework
+    - core/settings.py: добавить 'rest_framework' и базовые REST_FRAMEWORK настройки
 
 - ✅ JWT в куках (DRF + SimpleJWT)
-  - Установить djangorestframework-simplejwt
-  - core/settings.py: SIMPLE_JWT конфиг (lifetime, cookie names, rotation, samesite, secure), DRF аутентификатор
-  - src/users/interfaces/rest/urls.py: JWT endpoints (login/refresh/logout)
-  - src/users/interfaces/rest/views.py: вью для логина/логаута с установкой/очисткой cookie
-  - CSRF: продумать стратегию (например, чтение CSRF из куки + заголовок)
+    - Установить djangorestframework-simplejwt
+    - core/settings.py: SIMPLE_JWT конфиг (lifetime, cookie names, rotation, samesite, secure), DRF аутентификатор
+    - src/users/interfaces/rest/urls.py: JWT endpoints (login/refresh/logout)
+    - src/users/interfaces/rest/views.py: вью для логина/логаута с установкой/очисткой cookie
+    - CSRF: продумать стратегию (например, чтение CSRF из куки + заголовок)
 
 - ✅ Swagger/OpenAPI
-  - Установить drf-spectacular (или drf-yasg)
-  - core/settings.py: spectacular настройки
-  - core/urls.py: схемы /api/schema/, /api/docs/
+    - Установить drf-spectacular (или drf-yasg)
+    - core/settings.py: spectacular настройки
+    - core/urls.py: схемы /api/schema/, /api/docs/
 
 - ✅ Базовая конфигурация INSTALLED_APPS
-  - core/settings.py: 'src.users', 'src.accommodations', 'src.bookings', 'src.reviews', 'src.common' (payments отложим)
+    - core/settings.py: 'src.users', 'src.accommodations', 'src.bookings', 'src.reviews', 'src.common' (payments
+      отложим)
 
 Файлы и что в них будет:
+
 - core/settings.py — конфигурация БД (MySQL), DRF, JWT, Swagger.
 - core/urls.py — включение роутов приложений и Swagger.
 - src/*/interfaces/rest/urls.py — маршруты по приложениям.
@@ -65,32 +70,32 @@
 Цели: Регистрация, вход, роли (арендодатель/арендатор), разграничение прав.
 
 - ✅ Доменные модели и роли
-  - src/users/domain/entities.py — UserEntity (id, name, email, roles: {host, guest}, is_active)
-  - src/users/domain/value_objects.py — Email, PasswordHash (при необходимости)
-  - src/users/domain/repository_interfaces.py — IUserRepository (контракты поиска/создания)
-  - src/users/domain/services.py — правила назначений ролей
+    - src/users/domain/entities.py — UserEntity (id, name, email, roles: {host, guest}, is_active)
+    - src/users/domain/value_objects.py — Email, PasswordHash (при необходимости)
+    - src/users/domain/repository_interfaces.py — IUserRepository (контракты поиска/создания)
+    - src/users/domain/services.py — правила назначений ролей
 
 - ✅ Приложение (use-cases)
-  - src/users/application/commands.py — RegisterUser, AssignRoles
-  - src/users/application/queries.py — GetCurrentUser
-  - src/users/application/use_cases/ — обработчики команд/запросов
+    - src/users/application/commands.py — RegisterUser, AssignRoles
+    - src/users/application/queries.py — GetCurrentUser
+    - src/users/application/use_cases/ — обработчики команд/запросов
 
 - ✅ Инфраструктура (ORM и репозитории)
-  - src/users/infrastructure/orm/models.py — кастомная модель User (на базе AbstractUser)
-    - Поля: name (или first_name/last_name), email(unique), роли (например, JSON/ManyToMany/Choices/флаги)
-  - src/users/infrastructure/repositories.py — Django-реализация IUserRepository
-  - core/settings.py — AUTH_USER_MODEL = 'users.User'
-  - src/users/infrastructure/admin.py — регистрация модели в админке
+    - src/users/infrastructure/orm/models.py — кастомная модель User (на базе AbstractUser)
+        - Поля: name (или first_name/last_name), email(unique), роли (например, JSON/ManyToMany/Choices/флаги)
+    - src/users/infrastructure/repositories.py — Django-реализация IUserRepository
+    - core/settings.py — AUTH_USER_MODEL = 'users.User'
+    - src/users/infrastructure/admin.py — регистрация модели в админке
 
 - ✅ Интерфейсы (REST, JWT)
-  - src/users/interfaces/rest/serializers.py — RegisterSerializer, UserSerializer
-  - src/users/interfaces/rest/views.py — RegisterView, LoginView (JWT cookie), LogoutView, MeView
-  - src/users/interfaces/rest/permissions.py — IsHost, IsGuest
-  - src/users/interfaces/rest/urls.py — /auth/register/, /auth/login/, /auth/logout/, /auth/me/
+    - src/users/interfaces/rest/serializers.py — RegisterSerializer, UserSerializer
+    - src/users/interfaces/rest/views.py — RegisterView, LoginView (JWT cookie), LogoutView, MeView
+    - src/users/interfaces/rest/permissions.py — IsHost, IsGuest
+    - src/users/interfaces/rest/urls.py — /auth/register/, /auth/login/, /auth/logout/, /auth/me/
 
 - ✅ Права доступа
-  - Роль host: создавать/редактировать/удалять свои объявления
-  - Роль guest: просматривать/фильтровать
+    - Роль host: создавать/редактировать/удалять свои объявления
+    - Роль guest: просматривать/фильтровать
 
 ---
 
@@ -99,30 +104,34 @@
 Цели: Создание, редактирование, удаление, доступность (активно/неактивно).
 
 - ✅ Домейн
-  - src/accommodations/domain/entities.py — Accommodation (id, title, description, location, price, rooms, type, is_active, owner_id, created_at)
-  - src/accommodations/domain/value_objects.py — Location (city, region, country="DE"), Money/Price, HousingType (Enum)
-  - src/accommodations/domain/dtos.py — AccommodationDTO
-  - src/accommodations/domain/repository_interfaces.py — IAccommodationRepository
-  - src/accommodations/domain/services.py — инварианты (валидность цены, названия и т.д.)
+    - src/accommodations/domain/entities.py — Accommodation (id, title, description, location, price, rooms, type,
+      is_active, owner_id, created_at)
+    - src/accommodations/domain/value_objects.py — Location (city, region, country="DE"), Money/Price, HousingType (
+      Enum)
+    - src/accommodations/domain/dtos.py — AccommodationDTO
+    - src/accommodations/domain/repository_interfaces.py — IAccommodationRepository
+    - src/accommodations/domain/services.py — инварианты (валидность цены, названия и т.д.)
 
 - ✅ Приложение (use-cases)
-  - src/accommodations/application/commands.py — CreateAccommodation, UpdateAccommodation, DeleteAccommodation, ToggleAvailability
-  - src/accommodations/application/queries.py — GetAccommodationById
-  - src/accommodations/application/use_cases/ — обработчики
+    - src/accommodations/application/commands.py — CreateAccommodation, UpdateAccommodation, DeleteAccommodation,
+      ToggleAvailability
+    - src/accommodations/application/queries.py — GetAccommodationById
+    - src/accommodations/application/use_cases/ — обработчики
 
 - ✅ Инфраструктура
-  - src/accommodations/infrastructure/orm/models.py — ORM модель Accommodation (FK на users.User)
-  - src/accommodations/infrastructure/repositories.py — реализация IAccommodationRepository
-  - src/accommodations/infrastructure/admin.py — регистрация модели
+    - src/accommodations/infrastructure/orm/models.py — ORM модель Accommodation (FK на users.User)
+    - src/accommodations/infrastructure/repositories.py — реализация IAccommodationRepository
+    - src/accommodations/infrastructure/admin.py — регистрация модели
 
 - ✅ Интерфейсы (REST)
-  - src/accommodations/interfaces/rest/serializers.py — AccommodationCreateUpdateSerializer, AccommodationDetailSerializer
-  - src/accommodations/interfaces/rest/views.py — ViewSet/классы для CRUD и toggle
-    - Create/Update/Delete — только для host-владельца
-    - Toggle availability — только владелец
-  - src/accommodations/interfaces/rest/filters.py — фильтры позже (этап 3)
-  - src/accommodations/interfaces/rest/permissions.py — IsOwnerOrReadOnly, IsHost
-  - src/accommodations/interfaces/rest/urls.py — /accommodations/…
+    - src/accommodations/interfaces/rest/serializers.py — AccommodationCreateUpdateSerializer,
+      AccommodationDetailSerializer
+    - src/accommodations/interfaces/rest/views.py — ViewSet/классы для CRUD и toggle
+        - Create/Update/Delete — только для host-владельца
+        - Toggle availability — только владелец
+    - src/accommodations/interfaces/rest/filters.py — фильтры позже (этап 3)
+    - src/accommodations/interfaces/rest/permissions.py — IsOwnerOrReadOnly, IsHost
+    - src/accommodations/interfaces/rest/urls.py — /accommodations/…
 
 ---
 
@@ -131,21 +140,22 @@
 Цели: Поиск по ключевым словам в заголовке/описании, фильтрация и сортировка.
 
 - ✅ Домейн
-  - src/accommodations/domain/dtos.py — SearchQueryDTO (keyword, price_min/max, city/region, rooms_min/max, type, sort)
-  - src/accommodations/domain/services.py — правила валидации запроса
+    - src/accommodations/domain/dtos.py — SearchQueryDTO (keyword, price_min/max, city/region, rooms_min/max, type,
+      sort)
+    - src/accommodations/domain/services.py — правила валидации запроса
 
 - ✅ Приложение
-  - src/accommodations/application/queries.py — SearchAccommodations
-  - src/accommodations/application/use_cases/ — обработчик поиска (делегирует в репозиторий; параметризует сортировку)
+    - src/accommodations/application/queries.py — SearchAccommodations
+    - src/accommodations/application/use_cases/ — обработчик поиска (делегирует в репозиторий; параметризует сортировку)
 
 - ✅ Инфраструктура
-  - src/accommodations/infrastructure/repositories.py — методы фильтрации по ORM (Q, annotate)
-  - Индексы в БД: title, city/region, created_at, price
+    - src/accommodations/infrastructure/repositories.py — методы фильтрации по ORM (Q, annotate)
+    - Индексы в БД: title, city/region, created_at, price
 
 - ✅ Интерфейсы (REST)
-  - src/accommodations/interfaces/rest/filters.py — DRF фильтры/FilterSet
-  - src/accommodations/interfaces/rest/views.py — endpoint поиска: /accommodations/search/
-  - Поддержать сортировку: price asc/desc, created_at asc/desc
+    - src/accommodations/interfaces/rest/filters.py — DRF фильтры/FilterSet
+    - src/accommodations/interfaces/rest/views.py — endpoint поиска: /accommodations/search/
+    - Поддержать сортировку: price asc/desc, created_at asc/desc
 
 ---
 
@@ -154,31 +164,32 @@
 Цели: Создание, просмотр своих, отмена, подтверждение/отклонение хостом.
 
 - ✅ Домейн
-  - src/bookings/domain/entities.py — Booking (id, accommodation_id, guest_id, host_id, start_date, end_date, status: REQUESTED/CONFIRMED/CANCELLED/REJECTED, created_at)
-  - src/bookings/domain/value_objects.py — StayPeriod (валидация дат)
-  - src/bookings/domain/dtos.py — BookingDTO
-  - src/bookings/domain/repository_interfaces.py — IBookingRepository
-  - src/bookings/domain/services.py — валидация пересечений дат, политика отмены
+    - src/bookings/domain/entities.py — Booking (id, accommodation_id, guest_id, host_id, start_date, end_date, status:
+      REQUESTED/CONFIRMED/CANCELLED/REJECTED, created_at)
+    - src/bookings/domain/value_objects.py — StayPeriod (валидация дат)
+    - src/bookings/domain/dtos.py — BookingDTO
+    - src/bookings/domain/repository_interfaces.py — IBookingRepository
+    - src/bookings/domain/services.py — валидация пересечений дат, политика отмены
 
 - ✅ Приложение
-  - src/bookings/application/commands.py — CreateBooking, CancelBooking, ConfirmBooking, RejectBooking
-  - src/bookings/application/queries.py — ListMyBookings (guest), ListMyRequests (host)
-  - src/bookings/application/use_cases/ — обработчики
+    - src/bookings/application/commands.py — CreateBooking, CancelBooking, ConfirmBooking, RejectBooking
+    - src/bookings/application/queries.py — ListMyBookings (guest), ListMyRequests (host)
+    - src/bookings/application/use_cases/ — обработчики
 
 - ✅ Инфраструктура
-  - src/bookings/infrastructure/orm/models.py — ORM Booking (FK на User, Accommodation)
-  - src/bookings/infrastructure/repositories.py — реализация IBookingRepository; проверки пересечений в запросах
+    - src/bookings/infrastructure/orm/models.py — ORM Booking (FK на User, Accommodation)
+    - src/bookings/infrastructure/repositories.py — реализация IBookingRepository; проверки пересечений в запросах
 
 - ✅ Интерфейсы (REST)
-  - src/bookings/interfaces/rest/serializers.py — BookingCreateSerializer, BookingDetailSerializer
-  - src/bookings/interfaces/rest/views.py — эндпоинты:
-    - POST /bookings/ — создать
-    - GET /bookings/me/ — мои (guest)
-    - GET /bookings/requests/ — запросы, где я host
-    - POST /bookings/{id}/cancel/
-    - POST /bookings/{id}/confirm/
-    - POST /bookings/{id}/reject/
-  - Разрешения: гостю — создавать/смотреть свои; хосту — подтверждать/отклонять заявки на свои объявления
+    - src/bookings/interfaces/rest/serializers.py — BookingCreateSerializer, BookingDetailSerializer
+    - src/bookings/interfaces/rest/views.py — эндпоинты:
+        - POST /bookings/ — создать
+        - GET /bookings/me/ — мои (guest)
+        - GET /bookings/requests/ — запросы, где я host
+        - POST /bookings/{id}/cancel/
+        - POST /bookings/{id}/confirm/
+        - POST /bookings/{id}/reject/
+    - Разрешения: гостю — создавать/смотреть свои; хосту — подтверждать/отклонять заявки на свои объявления
 
 ---
 
@@ -187,30 +198,32 @@
 Цели: Оставить отзыв к объявлению после завершённого бронирования; список отзывов.
 
 - ✅ Домейн
-  - src/reviews/domain/entities.py — Review (id, accommodation_id, author_id, rating, text, created_at)
-  - src/reviews/domain/dtos.py — ReviewDTO
-  - src/reviews/domain/repository_interfaces.py — IReviewRepository
-  - src/reviews/domain/services.py — политика: отзыв можно оставить только гостю, у которого было завершённое бронирование
+    - src/reviews/domain/entities.py — Review (id, accommodation_id, author_id, rating, text, created_at)
+    - src/reviews/domain/dtos.py — ReviewDTO
+    - src/reviews/domain/repository_interfaces.py — IReviewRepository
+    - src/reviews/domain/services.py — политика: отзыв можно оставить только гостю, у которого было завершённое
+      бронирование
 
 - ✅ Приложение
-  - src/reviews/application/commands.py — CreateReview
-  - src/reviews/application/queries.py — ListReviewsForAccommodation
-  - src/reviews/application/use_cases/ — обработчики
+    - src/reviews/application/commands.py — CreateReview
+    - src/reviews/application/queries.py — ListReviewsForAccommodation
+    - src/reviews/application/use_cases/ — обработчики
 
 - ✅ Инфраструктура
-  - src/reviews/infrastructure/orm/models.py — ORM Review
-  - src/reviews/infrastructure/repositories.py — реализация IReviewRepository
+    - src/reviews/infrastructure/orm/models.py — ORM Review
+    - src/reviews/infrastructure/repositories.py — реализация IReviewRepository
 
 - ✅ Интерфейсы (REST)
-  - src/reviews/interfaces/rest/serializers.py — ReviewCreateSerializer, ReviewSerializer
-  - src/reviews/interfaces/rest/views.py — POST /reviews/, GET /accommodations/{id}/reviews/
-  - Права: автор — только гость с завершённым бронированием данного объявления
+    - src/reviews/interfaces/rest/serializers.py — ReviewCreateSerializer, ReviewSerializer
+    - src/reviews/interfaces/rest/views.py — POST /reviews/, GET /accommodations/{id}/reviews/
+    - Права: автор — только гость с завершённым бронированием данного объявления
 
 ---
 
 ## Этап 6. Дополнительные требования
 
 ### 6.1. Популярность
+
 - ✅ Подсчёт просмотров/отзывов для сортировки
     - Инфраструктура: агрегирующие запросы
     - Интерфейсы: параметр sort=popular
@@ -236,49 +249,62 @@
 - ✅ Сортировка объявлений по количеству и рейтингу отзывов
     - Инфраструктура: агрегация рейтинга и количества отзывов
     - Интерфейсы: параметры sort=rating,reviews
+
 ---
 
 ## Этап 7. Тесты (рекомендуется)
 
-- 🔄 feature/tests/base
-    - Общая тестовая инфраструктура: настроечные утилиты, базовые фабрики без внешних либ (простые helpers), общие mixin’ы для API-клиента с CSRF/JWT в куках.
-    - helpers для создания юзера/логина (JWT в куках), получения CSRF (вызов /api/csrf/), удобный APIClient с credentials=‘include’ аналогично прод-логике.
+- ✅ feature/tests/base
+    - Общая тестовая инфраструктура: настроечные утилиты, базовые фабрики без внешних либ (простые helpers), общие
+      mixin’ы для API-клиента с CSRF/JWT в куках.
+    - helpers для создания юзера/логина (JWT в куках), получения CSRF (вызов /api/csrf/), удобный APIClient с
+      credentials=‘include’ аналогично прод-логике.
     - Фикстуры: фабрики доменных DTO. Простые “фабрики” (функции) для доменных DTO и ORM-моделей (без factory_boy).
-- [ ] Unit-тесты доменных сервисов
+- ✅ Unit-тесты доменных сервисов
     - src/*/tests/unit/ — тесты правил, инвариантов
-    - feature/tests/unit-unit-accommodations, unit-bookings, unit-reviews, unit-users Юнит-тесты доменных правил (value objects, services, entities).
-    - Примеры: StayPeriod.overlaps(), доменная фабрика брони (пересечения), политика create_review (уникальность по booking_id), Location/Price валидации и пр.
-- [ ] Интеграционные тесты интерфейсов (DRF)
+    - feature/tests/unit-unit-accommodations, unit-bookings, unit-reviews, unit-users Юнит-тесты доменных правил (value
+      objects, services, entities).
+    - Примеры: StayPeriod.overlaps(), доменная фабрика брони (пересечения), политика create_review (уникальность по
+      booking_id), Location/Price валидации и пр.
+- ✅ Интеграционные тесты интерфейсов (DRF)
     - src/*/tests/integration/ — API кейсы: аутентификация, CRUD объявлений, поиск, бронирование, отзывы
     - feature/tests/integration-
     - integration-auth, integration-accommodations, integration-search, integration-bookings, integration-reviews
     - Интеграционные тесты DRF: сценарии API end-to-end.
     - Auth: register/login/logout/me с куками/CSRF.
     - Accommodations: CRUD, toggle, проверки прав, сериалайзеры.
-    - Search: фильтры, sort=created_at/price/popular/views/comments; проверка инкремента impressions_count и логирования истории поиска.
+    - Search: фильтры, sort=created_at/price/popular/views/comments; проверка инкремента impressions_count и логирования
+      истории поиска.
     - Bookings: create/confirm/reject/cancel с ролями и статусами.
     - Reviews: create/list/update/delete с правилами (booking завершён, уникальность по booking_id).
     - Views logging: детальные просмотры, счётчик views_count растёт.
 
-
 ---
 
-## Этап 8. Docker и AWS
+## Этап 8. Docker, AWS и git environments
 
-- [ ] Docker
-  - Dockerfile — сборка Django + gunicorn
-  - docker-compose.yml — web + MySQL
-  - ENV/секреты — через переменные окружения
-- [ ] AWS
-  - EC2 для приложения, RDS для MySQL (при наличии)
-  - Настройка reverse proxy (Nginx), статика/медиа (S3 — опционально)
-  - CI/CD (GitHub Actions) — деплой на EC2
+- 🔄 Docker
+    - Dockerfile — сборка Django + gunicorn
+    - docker-compose.yml — web + MySQL
+    - ENV/секреты — через переменные окружения
+    - Уменьшить размер образа +multistage build
+- [ ] GitHub Environments:
+    - Settings → Environments → Production.
+    - Секреты: DJANGO_SECRET_KEY, DB_PASSWORD, DB_ROOT_PASSWORD, JWT_* и т.д.
+- AWS
+    - EC2 (t3.micro/t3.small), Security Group: 80/443/22; 8000 только изнутри (если за Nginx).
+    - RDS MySQL (или пока локальный MySQL в контейнере).
+    - Nginx как reverse proxy → web:8000 (Gunicorn).
+    - CI/CD (GitHub Actions):
+        - Build & push образ в GitHub Container Registry или ECR.
+        - На EC2 — docker compose pull && docker compose up -d.
 
 ---
 
 ## Git-flow и порядок задач
 
 Рекомендуемый порядок веток:
+
 1. feature/setup-infra (Этап 0)
 2. feature/users-auth (Этап 1)
 3. feature/accommodations-crud (Этап 2)
@@ -290,6 +316,7 @@
 9. feature/docker-aws (Этап 8)
 
 Каждая ветка:
+
 - Реализует соответствующие задачи по слоям (domain → application → infrastructure → interfaces).
 - Пишем миграции только на уровне infrastructure/orm/models.py.
 - После успешного локального тестирования → PR → ревью → merge в main.
@@ -299,35 +326,36 @@
 ## Сводка по файлам (куда писать код)
 
 - Пользователи:
-  - domain: src/users/domain/* (entities, repository_interfaces, services)
-  - application: src/users/application/* (commands/queries/use_cases)
-  - infrastructure: src/users/infrastructure/orm/models.py, repositories.py
-  - interfaces: src/users/interfaces/rest/* (serializers, views, urls, permissions)
+    - domain: src/users/domain/* (entities, repository_interfaces, services)
+    - application: src/users/application/* (commands/queries/use_cases)
+    - infrastructure: src/users/infrastructure/orm/models.py, repositories.py
+    - interfaces: src/users/interfaces/rest/* (serializers, views, urls, permissions)
 
 - Объявления:
-  - domain: src/accommodations/domain/*
-  - application: src/accommodations/application/*
-  - infrastructure: src/accommodations/infrastructure/*
-  - interfaces: src/accommodations/interfaces/rest/*
+    - domain: src/accommodations/domain/*
+    - application: src/accommodations/application/*
+    - infrastructure: src/accommodations/infrastructure/*
+    - interfaces: src/accommodations/interfaces/rest/*
 
 - Поиск/Фильтры/Сортировка:
-  - application/queries + infrastructure/repositories + interfaces/rest/filters
+    - application/queries + infrastructure/repositories + interfaces/rest/filters
 
 - Бронирования:
-  - domain/application/infrastructure/interfaces в src/bookings/*
+    - domain/application/infrastructure/interfaces в src/bookings/*
 
 - Отзывы:
-  - domain/application/infrastructure/interfaces в src/reviews/*
+    - domain/application/infrastructure/interfaces в src/reviews/*
 
 - Общие сущности:
-  - src/common/* (история поиска, просмотров)
-  - src/shared/* (errors, result, utils)
+    - src/common/* (история поиска, просмотров)
+    - src/shared/* (errors, result, utils)
 
 ---
 
 ## Примечания по безопасности и UX
 
-- JWT в куках: HttpOnly, Secure (в проде), SameSite=Lax/None (если нужен кросс-домен), рефреш-токен в куке, access — опционально в куке/памяти.
+- JWT в куках: HttpOnly, Secure (в проде), SameSite=Lax/None (если нужен кросс-домен), рефреш-токен в куке, access —
+  опционально в куке/памяти.
 - CSRF: для cookie-based аутентификации — поддерживать CSRF токен.
 - Валидация входных данных: serializers + доменные правила.
 - Пагинация и лимиты: использовать DRF пагинацию; ограничивать размер выборок.
