@@ -7,6 +7,9 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from src.shared.errors import ApplicationError
+from src.shared.interfaces.api_errors import response_from_app_error, response_from_value_error
+
 from src.common.interfaces.permissions import IsAuthenticatedAndActive
 from src.reviews.application.use_cases.get_review import GetReviewUseCase
 from src.users.interfaces.rest.permissions import IsGuest
@@ -46,15 +49,20 @@ class CreateReviewView(APIView):
         reviews_repo = DjangoReviewRepository()
         bookings_repo = DjangoBookingRepository()
         use_case = CreateReviewUseCase(reviews=reviews_repo, bookings=bookings_repo)
-        dto = use_case.execute(
-            CreateReviewCommand(
-                accommodation_id=ser.validated_data["accommodation_id"],
-                author_id=request.user.id,
-                booking_id=ser.validated_data["booking_id"],
-                rating=ser.validated_data["rating"],
-                text=ser.validated_data["text"],
+        try:
+            dto = use_case.execute(
+                CreateReviewCommand(
+                    accommodation_id=ser.validated_data["accommodation_id"],
+                    author_id=request.user.id,
+                    booking_id=ser.validated_data["booking_id"],
+                    rating=ser.validated_data["rating"],
+                    text=ser.validated_data["text"],
+                )
             )
-        )
+        except ApplicationError as e:
+            return response_from_app_error(e)
+        except ValueError as e:
+            return response_from_value_error(e)
         return Response(ReviewDetailSerializer(dto).data, status=status.HTTP_201_CREATED)
 
 
@@ -116,7 +124,10 @@ class GetUpdateDeleteReviewView(APIView):
     def get(self, request, review_id: int):
         reviews_repo = DjangoReviewRepository()
         use_case = GetReviewUseCase(reviews=reviews_repo)
-        dto = use_case.execute(GetReviewCommand(review_id=review_id, actor_user_id=request.user.id))
+        try:
+            dto = use_case.execute(GetReviewCommand(review_id=review_id, actor_user_id=request.user.id))
+        except ApplicationError as e:
+            return response_from_app_error(e)
         return Response(ReviewDetailSerializer(dto).data, status=status.HTTP_200_OK)
 
     @method_decorator(csrf_protect)
@@ -125,19 +136,27 @@ class GetUpdateDeleteReviewView(APIView):
         ser.is_valid(raise_exception=True)
         reviews_repo = DjangoReviewRepository()
         use_case = UpdateReviewUseCase(reviews=reviews_repo)
-        dto = use_case.execute(
-            UpdateReviewCommand(
-                review_id=review_id,
-                actor_user_id=request.user.id,
-                rating=ser.validated_data.get("rating"),
-                text=ser.validated_data.get("text"),
+        try:
+            dto = use_case.execute(
+                UpdateReviewCommand(
+                    review_id=review_id,
+                    actor_user_id=request.user.id,
+                    rating=ser.validated_data.get("rating"),
+                    text=ser.validated_data.get("text"),
+                )
             )
-        )
+        except ApplicationError as e:
+            return response_from_app_error(e)
+        except ValueError as e:
+            return response_from_value_error(e)
         return Response(ReviewDetailSerializer(dto).data, status=status.HTTP_200_OK)
 
     @method_decorator(csrf_protect)
     def delete(self, request, review_id: int):
         reviews_repo = DjangoReviewRepository()
         use_case = DeleteReviewUseCase(reviews=reviews_repo)
-        use_case.execute(DeleteReviewCommand(review_id=review_id, actor_user_id=request.user.id))
+        try:
+            use_case.execute(DeleteReviewCommand(review_id=review_id, actor_user_id=request.user.id))
+        except ValueError as e:
+            return response_from_value_error(e)
         return Response(status=status.HTTP_204_NO_CONTENT)
