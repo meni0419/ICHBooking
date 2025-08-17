@@ -1,39 +1,45 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Sequence
 
 from django.contrib.auth import get_user_model
 
 from src.accommodations.infrastructure.orm.models import Accommodation as AccORM
 
-
 User = get_user_model()
 
 
-def create_user(email: str, password: Optional[str] = None, name: str = "Test User"):
+def create_user(
+        email: str,
+        password: Optional[str] = None,
+        name: str = "Test User",
+        roles: Optional[Sequence[str]] = None,
+):
     """
     Простая фабрика пользователя. Пароль опционален (для force_authenticate не нужен).
     """
     user = User.objects.create_user(email=email, password=password or None)
-    # Пытаемся заполнить имя, если поле есть
     if hasattr(user, "name"):
         user.name = name
-        user.save(update_fields=["name"])
+    # set roles
+    user.roles = list(roles) if roles is not None else (user.roles or ["guest"])
+    user.save(update_fields=["name", "roles"])
     return user
 
 
+
 def create_accommodation(
-    *,
-    owner_id: int,
-    title: str = "Cozy flat",
-    description: str = "Nice place to stay",
-    city: str = "Berlin",
-    region: str = "Berlin",
-    country: str = "DE",
-    price_cents: int = 10000,
-    rooms: int = 2,
-    housing_type: str = "apartment",
-    is_active: bool = True,
+        *,
+        owner_id: int,
+        title: str = "Cozy flat",
+        description: str = "Nice place to stay",
+        city: str = "Berlin",
+        region: str = "Berlin",
+        country: str = "DE",
+        price_cents: int = 10000,
+        rooms: int = 2,
+        housing_type: str = "apartment",
+        is_active: bool = True,
 ) -> AccORM:
     return AccORM.objects.create(
         owner_id=owner_id,

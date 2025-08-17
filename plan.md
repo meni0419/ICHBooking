@@ -248,7 +248,7 @@
     - src/*/tests/unit/ — тесты правил, инвариантов
     - feature/tests/unit-unit-accommodations, unit-bookings, unit-reviews, unit-users Юнит-тесты доменных правил (value objects, services, entities).
     - Примеры: StayPeriod.overlaps(), доменная фабрика брони (пересечения), политика create_review (уникальность по booking_id), Location/Price валидации и пр.
-- [ ] Интеграционные тесты интерфейсов (DRF)
+- 🔄 Интеграционные тесты интерфейсов (DRF)
     - src/*/tests/integration/ — API кейсы: аутентификация, CRUD объявлений, поиск, бронирование, отзывы
     - feature/tests/integration-
     - integration-auth, integration-accommodations, integration-search, integration-bookings, integration-reviews
