@@ -22,7 +22,8 @@ services:
   web:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile   # один и тот же Dockerfile для dev/prod
+    image: ichbooking-web      # локальный тег (для prod можно задать :prod в CI)
     container_name: ichbooking_web
     env_file:
       - .env
@@ -31,6 +32,8 @@ services:
         condition: service_healthy
     ports:
       - "${WEB_PORT}:8000"
+    # Для разработки можно оставить монтирование (горячая замена кода),
+    # если не нужно — просто закомментируй следующую секцию volumes.
     volumes:
       - .:/app
     restart: unless-stopped

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 set -e
 
 # Ожидание MySQL
@@ -10,11 +10,13 @@ if [ -n "${DB_HOST}" ]; then
     DB_WAIT_PORT="${DB_PORT:-3306}"
   fi
   echo "Waiting for ${DB_WAIT_HOST}:${DB_WAIT_PORT}..."
-  for i in {1..60}; do
+  i=1
+  while [ "$i" -le 60 ]; do
     if nc -z "${DB_WAIT_HOST}" "${DB_WAIT_PORT}"; then
       echo "DB is up"
       break
     fi
+    i=$((i + 1))
     sleep 1
   done
 fi
