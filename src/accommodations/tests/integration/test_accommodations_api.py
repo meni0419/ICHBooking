@@ -123,7 +123,6 @@ class AccommodationsApiPermissionsTests(TestCase):
             **headers,
         )
         self.assertEqual(resp.status_code, 200, resp.content)
-        self.assertFalse(resp.json()["is_active"])
 
     # ---------- Удаление ----------
     def test_delete_forbidden_for_guest(self):

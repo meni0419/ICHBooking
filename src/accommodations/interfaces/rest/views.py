@@ -1,6 +1,5 @@
 # Слой interfaces: представления/ендпоинты
 # Python
-# src/accommodations/interfaces/rest/views.py
 from __future__ import annotations
 
 from django.utils.decorators import method_decorator
