@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 import debug_toolbar
@@ -7,12 +8,17 @@ from django.conf import settings
 from src.common.interfaces.rest.views import CsrfCookieView
 
 
+def healthz(request):
+    return HttpResponse("ok")
+
+
 urlpatterns = [
+    path("healthz", healthz, name="healthz"),
     path("admin/", admin.site.urls),
     # Схема и Swagger
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    # path("api/docs/", SpectacularSwaggerView.as_view(),name="swagger-ui"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema", template_name="swagger_ui_dark.html"),name="swagger-ui"),
+    path("api/docs/", SpectacularSwaggerView.as_view(), name="swagger-ui"),
+    # path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema", template_name="swagger_ui_dark.html"),name="swagger-ui"),
     # Утилита CSRF
     path("api/csrf/", CsrfCookieView.as_view(), name="csrf-cookie"),
     # Роуты приложений

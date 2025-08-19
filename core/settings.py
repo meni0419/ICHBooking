@@ -177,6 +177,21 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API спецификация",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': False,
+        # 'defaultModelsExpandDepth': 1,
+        # 'defaultModelExpandDepth': 1,
+        # 'defaultModelRendering': 'example',
+        'displayRequestDuration': False,
+        # 'docExpansion': 'none',
+        'filter': True,
+        # 'operationsSorter': 'alpha',
+        'showExtensions': True,
+        'showCommonExtensions': True,
+        # 'tagsSorter': 'alpha'
+    },
     # Добавим csrf-схему как apiKey в заголовке. Через Authorize можно вставить X-CSRFToken.
     "APPEND_COMPONENTS": {
         "securitySchemes": {
@@ -189,3 +204,4 @@ SPECTACULAR_SETTINGS = {
         }
     },
 }
+

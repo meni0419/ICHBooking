@@ -14,7 +14,7 @@ services:
       - db_data:/var/lib/mysql
       - ./docker/db-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p${DB_PASSWORD} || exit 1"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p${DB_PASSWORD} || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -33,10 +33,17 @@ services:
     ports:
       - "${WEB_PORT}:8000"
     # Для разработки можно оставить монтирование (горячая замена кода),
-    # если не нужно — просто закомментируй следующую секцию volumes.
+    # для прод комментируем секцию volumes.
     volumes:
       - .:/app
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:${PORT:-8000}/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
 
 volumes:
   db_data:
