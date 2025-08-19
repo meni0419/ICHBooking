@@ -1,3 +1,4 @@
+# tests/test_reviews_api.py
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -73,12 +74,12 @@ class ReviewsApiTests(TestCase):
         self.client.force_authenticate(user=self.guest)
         headers = ensure_csrf(self.client)
         payload = {
-            "accommodation_id": self.acc.id,
+            # accommodation_id теперь берём из path, из тела убираем
             "booking_id": booking_id,
             "rating": 5,
             "text": "Amazing stay, would return!",
         }
-        resp = self.client.post("/api/reviews/", payload, format="json", **headers)
+        resp = self.client.post(f"/api/accommodations/{self.acc.id}/reviews/", payload, format="json", **headers)
         self.assertEqual(resp.status_code, 201, resp.content)
         review = resp.json()
         review_id = review["id"]
@@ -119,12 +120,12 @@ class ReviewsApiTests(TestCase):
         # 6) Duplicate create for same booking -> 400
         headers = ensure_csrf(self.client)
         payload = {
-            "accommodation_id": self.acc.id,
+            # accommodation_id убран из тела
             "booking_id": booking_id,
             "rating": 4,
             "text": "Another review for the same booking",
         }
-        resp = self.client.post("/api/reviews/", payload, format="json", **headers)
+        resp = self.client.post(f"/api/accommodations/{self.acc.id}/reviews/", payload, format="json", **headers)
         self.assertEqual(resp.status_code, 400, resp.content)
 
         # 7) Delete (only author)
@@ -159,10 +160,10 @@ class ReviewsApiTests(TestCase):
         self.client.force_authenticate(user=self.guest)
         headers = ensure_csrf(self.client)
         payload = {
-            "accommodation_id": self.acc.id,
+            # accommodation_id убираем из тела, используем path
             "booking_id": booking_id,
             "rating": 5,
             "text": "Should fail because booking is not completed",
         }
-        resp = self.client.post("/api/reviews/", payload, format="json", **headers)
+        resp = self.client.post(f"/api/accommodations/{self.acc.id}/reviews/", payload, format="json", **headers)
         self.assertEqual(resp.status_code, 400, resp.content)

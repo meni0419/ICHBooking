@@ -7,11 +7,11 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from src.reviews.application.use_cases.get_review import GetReviewUseCase
 from src.shared.errors import ApplicationError
 from src.shared.interfaces.api_errors import response_from_app_error, response_from_value_error
 
 from src.common.interfaces.permissions import IsAuthenticatedAndActive
-from src.reviews.application.use_cases.get_review import GetReviewUseCase
 from src.users.interfaces.rest.permissions import IsGuest
 
 from src.reviews.interfaces.rest.serializers import (
@@ -34,16 +34,38 @@ from src.bookings.infrastructure.repositories import DjangoBookingRepository
 
 @extend_schema(
     tags=["reviews"],
+    responses={200: ReviewDetailSerializer(many=True)},
+    operation_id="reviews_list_for_accommodation",
+    description="Список отзывов по объявлению (публично).",
+    methods=["GET"],
+)
+@extend_schema(
+    tags=["reviews"],
     request=ReviewCreateSerializer,
     responses={201: ReviewDetailSerializer, 400: OpenApiResponse(description="Bad request")},
     operation_id="reviews_create",
     description="Создать отзыв к завершённому бронированию (guest). Требуется CSRF.",
+    methods=["POST"],
 )
-@method_decorator(csrf_protect, name="dispatch")
-class CreateReviewView(APIView):
-    permission_classes = [IsAuthenticatedAndActive, IsGuest]
+class AccommodationReviewsView(APIView):
+    """
+    GET: публичный список отзывов по объявлению.
+    POST: создать отзыв (только для гостя), CSRF обязателен.
+    """
 
-    def post(self, request):
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsAuthenticatedAndActive(), IsGuest()]
+        return [permissions.AllowAny()]
+
+    def get(self, request, accommodation_id: int):
+        reviews_repo = DjangoReviewRepository()
+        use_case = ListReviewsForAccommodationUseCase(reviews=reviews_repo)
+        dtos = use_case.execute(ListReviewsForAccommodationQuery(accommodation_id=accommodation_id))
+        return Response(ReviewDetailSerializer(dtos, many=True).data, status=status.HTTP_200_OK)
+
+    @method_decorator(csrf_protect)
+    def post(self, request, accommodation_id: int):
         ser = ReviewCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         reviews_repo = DjangoReviewRepository()
@@ -52,7 +74,7 @@ class CreateReviewView(APIView):
         try:
             dto = use_case.execute(
                 CreateReviewCommand(
-                    accommodation_id=ser.validated_data["accommodation_id"],
+                    accommodation_id=accommodation_id,  # берем из path
                     author_id=request.user.id,
                     booking_id=ser.validated_data["booking_id"],
                     rating=ser.validated_data["rating"],
@@ -69,22 +91,6 @@ class CreateReviewView(APIView):
 @extend_schema(
     tags=["reviews"],
     responses={200: ReviewDetailSerializer(many=True)},
-    operation_id="reviews_list_for_accommodation",
-    description="Список отзывов по объявлению (публично).",
-)
-class ListReviewsForAccommodationView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request, accommodation_id: int):
-        reviews_repo = DjangoReviewRepository()
-        use_case = ListReviewsForAccommodationUseCase(reviews=reviews_repo)
-        dtos = use_case.execute(ListReviewsForAccommodationQuery(accommodation_id=accommodation_id))
-        return Response(ReviewDetailSerializer(dtos, many=True).data, status=status.HTTP_200_OK)
-
-
-@extend_schema(
-    tags=["reviews"],
-    responses={200: ReviewDetailSerializer(many=True)},
     operation_id="reviews_list_mine",
     description="Мои отзывы (guest).",
 )
@@ -95,6 +101,16 @@ class ListMyReviewsView(APIView):
         reviews_repo = DjangoReviewRepository()
         use_case = ListMyReviewsUseCase(reviews=reviews_repo)
         dtos = use_case.execute(ListMyReviewsQuery(author_id=request.user.id))
+        return Response(ReviewDetailSerializer(dtos, many=True).data, status=status.HTTP_200_OK)
+
+
+class ListReviewsByUserIdView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, user_id: int):
+        reviews_repo = DjangoReviewRepository()
+        use_case = ListMyReviewsUseCase(reviews=reviews_repo)
+        dtos = use_case.execute(ListMyReviewsQuery(author_id=user_id))
         return Response(ReviewDetailSerializer(dtos, many=True).data, status=status.HTTP_200_OK)
 
 

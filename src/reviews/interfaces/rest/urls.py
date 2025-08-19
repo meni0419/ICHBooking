@@ -2,13 +2,14 @@
 from django.urls import path
 
 from .views import (
-    CreateReviewView,
     ListMyReviewsView,
+    ListReviewsByUserIdView,
     GetUpdateDeleteReviewView,
 )
 
 urlpatterns = [
-    path("", CreateReviewView.as_view(), name="reviews-create"),  # POST
+
     path("me/", ListMyReviewsView.as_view(), name="reviews-me"),  # GET
+    path("user/<int:user_id>/", ListReviewsByUserIdView.as_view(), name="reviews-user"),
     path("<int:review_id>/", GetUpdateDeleteReviewView.as_view(), name="reviews-get-update-delete"),  # GET/PATCH/DELETE
 ]
