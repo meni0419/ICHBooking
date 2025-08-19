@@ -1,3 +1,4 @@
+# docker/Dockerfile
 # syntax=docker/dockerfile:1
 
 ############################
@@ -25,9 +26,8 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем проект (для сборки wheel-ов локальных пакетов, если появятся; не увеличит финальный размер)
+# Копируем проект (если понадобятся локальные колёса/сборка)
 COPY . /app
-
 
 ############################
 # Stage 2: runtime (alpine)
@@ -45,22 +45,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
     PORT=8000
 
-# Несистемный пользователь
-RUN addgroup -S app && adduser -S app -G app
-
+RUN addgroup --system app && adduser --system --ingroup app app
+RUN mkdir -p /app && chown app:app /app
 WORKDIR /app
 
-# Переносим готовое venv из builder
+# Копируем готовое venv из builder (быстро, без повторной установки)
 COPY --from=builder /opt/venv /opt/venv
 
-# Код проекта
-COPY . /app
+# Затем основной код сразу с нужным владельцем
+COPY --chown=app:app . /app
 
-# Права
-RUN chown -R app:app /app && chmod +x docker/entrypoint.sh
 USER app
 
 EXPOSE 8000
 
-# Запуск через entrypoint: миграции, collectstatic, потом gunicorn
-CMD ["docker/entrypoint.sh"]
+# если entrypoint исполняемый (+x в репо)
+#CMD ["docker/entrypoint.sh"]
+# если не менять права в гите:
+CMD ["sh", "docker/entrypoint.sh"]

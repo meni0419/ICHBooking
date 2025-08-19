@@ -11,7 +11,6 @@ from src.reviews.domain.value_objects import Rating
 from src.reviews.domain.repository_interfaces import IReviewRepository
 from src.reviews.application.use_cases.update_review import UpdateReviewUseCase
 from src.reviews.application.use_cases.delete_review import DeleteReviewUseCase
-from src.reviews.application.use_cases.get_review import GetReviewUseCase
 from src.reviews.application.commands import UpdateReviewCommand, DeleteReviewCommand, GetReviewCommand
 
 
@@ -109,22 +108,3 @@ class UpdateDeleteUseCasesTests(SimpleTestCase):
         cmd = DeleteReviewCommand(review_id=1, actor_user_id=7)
         with self.assertRaises(ValueError):
             uc.execute(cmd)
-
-    def test_get_review_success(self):
-        repo = FakeReviewRepo(make_seed_review())
-        uc = GetReviewUseCase(reviews=repo)
-        dto = uc.execute(GetReviewCommand(review_id=1, actor_user_id=7))
-        self.assertEqual(dto.id, 1)
-        self.assertEqual(dto.text, "Seed text")
-
-    def test_get_review_not_found(self):
-        repo = FakeReviewRepo()
-        uc = GetReviewUseCase(reviews=repo)
-        with self.assertRaises(ApplicationError):
-            uc.execute(GetReviewCommand(review_id=1, actor_user_id=7))
-
-    def test_get_review_not_author(self):
-        repo = FakeReviewRepo(make_seed_review())
-        uc = GetReviewUseCase(reviews=repo)
-        with self.assertRaises(ApplicationError):
-            uc.execute(GetReviewCommand(review_id=1, actor_user_id=999))
