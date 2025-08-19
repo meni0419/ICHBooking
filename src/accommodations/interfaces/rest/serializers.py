@@ -45,8 +45,6 @@ class AccommodationDetailSerializer(serializers.Serializer):
     price_eur = serializers.FloatField()
     rooms = serializers.IntegerField()
     housing_type = serializers.CharField()
-    is_active = serializers.BooleanField()
-    impressions_count = serializers.IntegerField()
     views_count = serializers.IntegerField()
     comments_count = serializers.IntegerField()
 

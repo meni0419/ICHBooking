@@ -13,6 +13,9 @@ class HousingType(Enum):
     ROOM = "room"  # комната
     OTHER = "other"  # другое
 
+    def __str__(self):
+        return self.value
+
 
 @dataclass(frozen=True)
 class Location:
