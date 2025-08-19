@@ -1,27 +1,66 @@
 # syntax=docker/dockerfile:1
-FROM python:3.13-slim
+
+############################
+# Stage 1: builder (alpine)
+############################
+FROM python:3.13-alpine AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    VENV_PATH=/opt/venv
+
+# Build deps для mysqlclient и прочих колёс
+RUN apk add --no-cache \
+    build-base \
+    mariadb-connector-c-dev \
+    linux-headers
+
+# Виртуальное окружение
+RUN python -m venv ${VENV_PATH}
+ENV PATH="${VENV_PATH}/bin:$PATH"
 
 WORKDIR /app
-
-# Системные зависимости: mysqlclient требует компилятор, dev-библиотеки и pkg-config.
-# Также ставим netcat для ожидания БД.
-RUN apt-get update && apt-get install -y \
-    build-essential default-libmysqlclient-dev pkg-config \
-    curl netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
 
 # Копируем зависимости и ставим их
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем весь проект (контекст сборки — корень репозитория)
-COPY .. /app
+# Копируем проект (для сборки wheel-ов локальных пакетов, если появятся; не увеличит финальный размер)
+COPY . /app
 
-# Гарантируем, что entrypoint исполняемый
-RUN chmod +x docker/entrypoint.sh
+
+############################
+# Stage 2: runtime (alpine)
+############################
+FROM python:3.13-alpine AS runtime
+
+# Только runtime-зависимости (mysqlclient runtime, netcat для wait)
+RUN apk add --no-cache \
+    mariadb-connector-c \
+    netcat-openbsd
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    VENV_PATH=/opt/venv \
+    PATH="/opt/venv/bin:$PATH" \
+    PORT=8000
+
+# Несистемный пользователь
+RUN addgroup -S app && adduser -S app -G app
+
+WORKDIR /app
+
+# Переносим готовое venv из builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Код проекта
+COPY . /app
+
+# Права
+RUN chown -R app:app /app && chmod +x docker/entrypoint.sh
+USER app
 
 EXPOSE 8000
+
+# Запуск через entrypoint: миграции, collectstatic, потом gunicorn
 CMD ["docker/entrypoint.sh"]
