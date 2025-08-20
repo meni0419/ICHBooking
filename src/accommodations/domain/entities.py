@@ -1,5 +1,4 @@
 # Слой domain: сущности предметной области
-# src/accommodations/domain/entities.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,7 +27,8 @@ class Accommodation:
     updated_at: Optional[datetime] = None
     impressions_count: int = 0
     views_count: int = 0
-    comments_count: int = 0
+    reviews_count: int = 0
+    average_rating: float = 0.0
 
     def rename(self, new_title: str) -> None:
         if not new_title or len(new_title.strip()) < 3:

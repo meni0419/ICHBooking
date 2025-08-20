@@ -31,7 +31,8 @@ def _to_domain(obj: AccORM) -> AccDomain:
         updated_at=obj.updated_at,
         impressions_count=obj.impressions_count,
         views_count=obj.views_count,
-        comments_count=getattr(obj, "review_count", 0),
+        reviews_count=getattr(obj, "reviews_count", 0),
+        average_rating=float(getattr(obj, "average_rating", 0) or 0),
     )
 
 
@@ -51,7 +52,7 @@ def _apply_domain(acc: AccDomain, obj: AccORM) -> AccORM:
 class DjangoAccommodationRepository(IAccommodationRepository):
     def get_by_id(self, acc_id: int) -> Optional[AccDomain]:
         try:
-            qs = AccORM.objects.filter(pk=acc_id).annotate(review_count=Count("reviews"))
+            qs = AccORM.objects.filter(pk=acc_id)
             return _to_domain(qs.get())
         except AccORM.DoesNotExist:
             return None
@@ -60,24 +61,24 @@ class DjangoAccommodationRepository(IAccommodationRepository):
         qs = AccORM.objects.filter(owner_id=owner_id)
         if active_only:
             qs = qs.filter(is_active=True)
-        qs = qs.annotate(review_count=Count("reviews")).order_by("-created_at")
+        qs = qs.order_by("-created_at")
         return [_to_domain(o) for o in qs]
 
     def search_ids(self, ids: Iterable[int]) -> list[AccDomain]:
-        qs = AccORM.objects.filter(id__in=list(ids)).annotate(review_count=Count("reviews"))
+        qs = AccORM.objects.filter(id__in=list(ids))
         return [_to_domain(o) for o in qs]
 
     def create(self, acc: AccDomain) -> AccDomain:
         obj = AccORM(owner_id=acc.owner_id)
         obj = _apply_domain(acc, obj)
         obj.save()
-        return _to_domain(AccORM.objects.annotate(review_count=Count("reviews")).get(pk=obj.id))
+        return _to_domain(AccORM.objects.get(pk=obj.id))
 
     def update(self, acc: AccDomain) -> AccDomain:
         obj = AccORM.objects.get(pk=acc.id)
         obj = _apply_domain(acc, obj)
         obj.save()
-        return _to_domain(AccORM.objects.annotate(review_count=Count("reviews")).get(pk=obj.id))
+        return _to_domain(AccORM.objects.get(pk=obj.id))
 
     def delete(self, acc_id: int, owner_id: Optional[int] = None) -> None:
         qs = AccORM.objects.filter(pk=acc_id)
@@ -88,8 +89,35 @@ class DjangoAccommodationRepository(IAccommodationRepository):
     def increment_views(self, acc_id: int) -> None:
         AccORM.objects.filter(pk=acc_id).update(views_count=F("views_count") + 1)
 
+    def _apply_sort(self, qs: QuerySet, sort: SearchSort) -> QuerySet:
+        # Маппинг сортировок на поля ORM (используем денормализованные поля модели)
+        if sort == SearchSort.PRICE_ASC:
+            return qs.order_by("price_cents", "-id")
+        if sort == SearchSort.PRICE_DESC:
+            return qs.order_by("-price_cents", "-id")
+        if sort == SearchSort.CREATED_AT_ASC:
+            return qs.order_by("created_at", "id")
+        if sort == SearchSort.CREATED_AT_DESC:
+            return qs.order_by("-created_at", "-id")
+        if sort == SearchSort.VIEWS:
+            # Сначала по количеству просмотров, затем по дате создания, затем по id
+            return qs.order_by("-views_count", "-created_at", "-id")
+        if sort == SearchSort.POPULAR:
+            # Популярность — по показам (impressions), затем по дате создания, затем по id
+            return qs.order_by("-impressions_count", "-created_at", "-id")
+        if sort == SearchSort.RATING_DESC:
+            return qs.order_by("-average_rating", "-reviews_count", "-created_at", "-id")
+        if sort == SearchSort.RATING_ASC:
+            return qs.order_by("average_rating", "-created_at", "-id")
+        if sort == SearchSort.REVIEWS_DESC:
+            return qs.order_by("-reviews_count", "-created_at", "-id")
+        if sort == SearchSort.REVIEWS_ASC:
+            return qs.order_by("reviews_count", "-created_at", "-id")
+        # По умолчанию — новые сверху
+        return qs.order_by("-created_at", "-id")
+
     def search(self, q: SearchQueryDTO) -> Tuple[list[AccDomain], int]:
-        qs: QuerySet[AccORM] = AccORM.objects.all()
+        qs = AccORM.objects.all()
 
         if q.only_active:
             qs = qs.filter(is_active=True)
@@ -134,24 +162,8 @@ class DjangoAccommodationRepository(IAccommodationRepository):
             with transaction.atomic():
                 AccORM.objects.filter(id__in=ids).update(impressions_count=F("impressions_count") + 1)
 
-        # Для выдачи добавляем количество отзывов
-        qs = qs.annotate(review_count=Count("reviews"))
-
-        # Сортировки
-        if q.sort == SearchSort.PRICE_ASC:
-            qs = qs.order_by("price_cents", "-id")
-        elif q.sort == SearchSort.PRICE_DESC:
-            qs = qs.order_by("-price_cents", "-id")
-        elif q.sort == SearchSort.CREATED_AT_ASC:
-            qs = qs.order_by("created_at", "id")
-        elif q.sort == SearchSort.POPULAR:
-            qs = qs.order_by("-impressions_count", "-created_at", "-id")
-        elif q.sort == SearchSort.VIEWS:
-            qs = qs.order_by("-views_count", "-created_at", "-id")
-        elif q.sort == SearchSort.COMMENTS:
-            qs = qs.order_by("-review_count", "-created_at", "-id")
-        else:
-            qs = qs.order_by("-created_at", "-id")
+        # Сортировка — берём из q.sort
+        qs = self._apply_sort(qs, q.sort)
 
         page = max(1, q.page)
         page_size = max(1, q.page_size)

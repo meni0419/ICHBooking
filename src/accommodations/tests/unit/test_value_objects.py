@@ -22,3 +22,5 @@ class ValueObjectsTests(SimpleTestCase):
 
     def test_housing_type_enum(self):
         self.assertEqual(HousingType("apartment").value, "apartment")
+        # совместимость со строковым представлением
+        self.assertEqual(str(HousingType.APARTMENT), "apartment")

@@ -46,7 +46,8 @@ class AccommodationDetailSerializer(serializers.Serializer):
     rooms = serializers.IntegerField()
     housing_type = serializers.CharField()
     views_count = serializers.IntegerField()
-    comments_count = serializers.IntegerField()
+    reviews_count = serializers.IntegerField()
+    average_rating = serializers.DecimalField(max_digits=3, decimal_places=2)
 
 
 class SearchQueryParamsSerializer(serializers.Serializer):

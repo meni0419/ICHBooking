@@ -32,6 +32,18 @@ class AccommodationsApiPermissionsTests(TestCase):
         resp = self.client.get(f"/api/accommodations/{self.acc.id}/")
         self.assertEqual(resp.status_code, 200, resp.content)
         data = resp.json()
+
+        # Поля присутствуют
+        self.assertIn("views_count", data)
+        self.assertIn("reviews_count", data)
+        self.assertIn("average_rating", data)
+
+        # Счётчик просмотров увеличился (вьюха теперь инкрементирует до чтения)
+        first_views = data["views_count"]
+        resp2 = self.client.get(f"/api/accommodations/{self.acc.id}/")
+        self.assertEqual(resp2.status_code, 200, resp2.content)
+        data2 = resp2.json()
+        self.assertGreaterEqual(data2["views_count"], first_views + 1)
         self.assertEqual(data["id"], self.acc.id)
         self.assertEqual(data["title"], "My listing")
 

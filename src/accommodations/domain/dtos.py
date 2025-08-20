@@ -24,7 +24,10 @@ class AccommodationDTO:
     is_active: bool
     impressions_count: int
     views_count: int
-    comments_count: int
+    reviews_count: int
+    average_rating: float
+    reviews_count: int
+    average_rating: float
 
 
 @dataclass
@@ -63,7 +66,10 @@ class SearchSort(Enum):
     CREATED_AT_DESC = "created_at_desc"
     POPULAR = "popular"
     VIEWS = "views"
-    COMMENTS = "comments"
+    RATING_DESC = "rating_desc"
+    RATING_ASC = "rating_asc"
+    REVIEWS_DESC = "reviews_desc"
+    REVIEWS_ASC = "reviews_asc"
 
 
 @dataclass
