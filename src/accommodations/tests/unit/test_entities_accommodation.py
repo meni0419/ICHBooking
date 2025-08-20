@@ -64,3 +64,10 @@ class AccommodationEntityTests(SimpleTestCase):
         self.assertEqual(acc.price.amount_cents, 9999)
         self.assertEqual(acc.rooms.value, 3)
         self.assertEqual(acc.housing_type.value if hasattr(acc.housing_type, "value") else acc.housing_type, "studio")
+
+    def test_default_counters_are_zero(self):
+        acc = make_entity()
+        self.assertEqual(acc.impressions_count, 0)
+        self.assertEqual(acc.views_count, 0)
+        self.assertEqual(acc.reviews_count, 0)
+        self.assertAlmostEqual(acc.average_rating, 0.0, places=2)
