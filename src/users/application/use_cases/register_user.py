@@ -17,6 +17,7 @@ class RegisterUserUseCase:
     Валидация паролей (password == password_confirm), проверка уникальности email.
     Создание пользователя делегируется IAuthProvider, чтобы безопасно установить пароль.
     """
+
     def __init__(self, users: IUserRepository, auth: IAuthProvider):
         self._users = users
         self._auth = auth

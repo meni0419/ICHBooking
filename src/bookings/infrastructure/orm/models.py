@@ -1,6 +1,4 @@
 # Слой infrastructure: Django ORM модели
-# Python
-# src/bookings/infrastructure/orm/models.py
 from __future__ import annotations
 
 from django.conf import settings

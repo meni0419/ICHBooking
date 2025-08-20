@@ -1,4 +1,3 @@
-# src/users/application/use_cases/get_current_user.py
 from __future__ import annotations
 
 from src.shared.errors import ApplicationError

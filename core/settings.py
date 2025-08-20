@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     'src.users',
     'src.accommodations',
     'src.bookings',
-    'src.payments',
     'src.reviews',
     'src.common',
 ]

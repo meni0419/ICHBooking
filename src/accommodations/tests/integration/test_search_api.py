@@ -1,11 +1,9 @@
-# src/accommodations/tests/integration/test_search_api.py
 from __future__ import annotations
 
 from django.test import TestCase
 from rest_framework.test import APIClient
 
 from src.shared.testing.factories import create_user, create_accommodation
-from src.accommodations.infrastructure.orm.models import Accommodation as AccORM
 
 
 class SearchApiTests(TestCase):

@@ -1,5 +1,4 @@
 # Слой interfaces: представления/ендпоинты
-# Python
 from __future__ import annotations
 
 from django.utils.decorators import method_decorator

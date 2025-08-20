@@ -1,8 +1,6 @@
 # Слой interfaces: DRF сериалайзеры
 from __future__ import annotations
 
-from typing import Optional
-
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 

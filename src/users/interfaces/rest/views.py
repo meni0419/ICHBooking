@@ -1,4 +1,3 @@
-# src/users/interfaces/rest/views.py
 from __future__ import annotations
 
 import os
