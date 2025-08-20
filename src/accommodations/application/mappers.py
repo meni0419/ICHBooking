@@ -19,5 +19,6 @@ def to_dto(acc: Accommodation) -> AccommodationDTO:
         is_active=acc.is_active,
         impressions_count=acc.impressions_count,
         views_count=acc.views_count,
-        comments_count=acc.comments_count,
+        reviews_count=acc.reviews_count,
+        average_rating=acc.average_rating,
     )

@@ -95,15 +95,18 @@ class AccommodationDetailView(APIView):
 
     def get(self, request, acc_id: int):
         repo = DjangoAccommodationRepository()
-        dto = GetAccommodationByIdUseCase(repo).execute(GetAccommodationByIdQuery(id=acc_id))
 
         user_id = request.user.id if getattr(request, "user", None) and request.user.is_authenticated else None
         log_listing_view(accommodation_id=acc_id, user_id=user_id)
+
+        # Сначала инкрементируем просмотры
         repo.increment_views(acc_id=acc_id)
 
-        data = AccommodationDetailSerializer(dto).data
-        data["views_count"] = data.get("views_count", 0) + 1
-        return Response(data, status=status.HTTP_200_OK)
+        # Затем берём актуальные данные
+        dto = GetAccommodationByIdUseCase(repo).execute(GetAccommodationByIdQuery(id=acc_id))
+
+        # Возвращаем без ручного "+1"
+        return Response(AccommodationDetailSerializer(dto).data, status=status.HTTP_200_OK)
 
     def patch(self, request, acc_id: int):
         ser = AccommodationPartialUpdateSerializer(data=request.data, partial=True)

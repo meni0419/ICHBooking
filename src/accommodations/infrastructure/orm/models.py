@@ -37,6 +37,16 @@ class Accommodation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     impressions_count = models.BigIntegerField(default=0, db_index=True)
     views_count = models.BigIntegerField(default=0, db_index=True)
+    average_rating = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0,
+        help_text="Средний рейтинг 1.00..5.00"
+    )
+    reviews_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Количество отзывов по объявлению"
+    )
 
     class Meta:
         db_table = "accommodations"
