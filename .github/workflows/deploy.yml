@@ -93,4 +93,5 @@ jobs:
             # Подтягиваем образ и перезапускаем
             docker compose -f docker-compose-prod.yml --env-file .env pull
             docker compose -f docker-compose-prod.yml --env-file .env up -d
-            docker image prune -f
+            docker image prune -f --filter "until=24h"
+            docker builder prune -f --filter "until=24h"
