@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - prod
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -43,26 +44,21 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,ECR_REGISTRY
           script: |
             set -e
-
-            # Установим awscli, если отсутствует
-            if ! command -v aws >/dev/null 2>&1; then
-              if command -v apt-get >/dev/null 2>&1; then
-                sudo apt-get update && sudo apt-get install -y awscli
-              elif command -v dnf >/dev/null 2>&1; then
-                sudo dnf install -y awscli
-              fi
-            fi
-
+            
+            # Получаем пароль ECR через контейнер aws-cli (без установки awscli и без sudo)
+            ECR_PASSWORD=$(docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_REGION amazon/aws-cli ecr get-login-password --region "${AWS_REGION}")
+            
             # Логин в ECR
-            aws ecr get-login-password --region "${{ env.AWS_REGION }}" | docker login --username AWS --password-stdin "${{ env.ECR_REGISTRY }}"
-
-            # Обновим код на сервере
+            echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+            
+            # Обновляем код на сервере
             cd ~/ICHBooking || (git clone https://github.com/meni0419/ICHBooking.git ~/ICHBooking && cd ~/ICHBooking)
             git fetch --all
             git reset --hard origin/${{ github.ref_name }}
-
+            
             # Сформируем .env из Secrets/Vars окружения GitHub
             cat > .env <<'EOF'
             DJANGO_DEBUG=${{ vars.DJANGO_DEBUG }}
@@ -71,9 +67,9 @@ jobs:
             DJANGO_CSRF_TRUSTED_ORIGINS=${{ vars.DJANGO_CSRF_TRUSTED_ORIGINS }}
             DJANGO_SECURE_COOKIES=${{ vars.DJANGO_SECURE_COOKIES }}
             DOMAIN=${{ vars.DOMAIN }}
-
+            
             WEB_PORT=${{ vars.WEB_PORT }}
-
+            
             DB_ENGINE=${{ vars.DB_ENGINE }}
             DB_NAME=${{ vars.DB_NAME }}
             DB_TEST_NAME=${{ vars.DB_TEST_NAME }}
@@ -82,19 +78,19 @@ jobs:
             DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
             DB_HOST=${{ vars.DB_HOST }}
             DB_PORT=${{ vars.DB_PORT }}
-
+            
             JWT_ACCESS_COOKIE_NAME=${{ vars.JWT_ACCESS_COOKIE_NAME }}
             JWT_REFRESH_COOKIE_NAME=${{ vars.JWT_REFRESH_COOKIE_NAME }}
             JWT_COOKIE_SAMESITE=${{ vars.JWT_COOKIE_SAMESITE }}
             JWT_COOKIE_SECURE=${{ vars.JWT_COOKIE_SECURE }}
             JWT_ACCESS_LIFETIME_MIN=${{ vars.JWT_ACCESS_LIFETIME_MIN }}
             JWT_REFRESH_LIFETIME_DAYS=${{ vars.JWT_REFRESH_LIFETIME_DAYS }}
-
+            
             RUN_MIGRATIONS=${{ vars.RUN_MIGRATIONS }}
             RUN_COLLECTSTATIC=${{ vars.RUN_COLLECTSTATIC }}
             EOF
-
-            # Подтянуть образ и перезапустить
+            
+            # Подтягиваем образ и перезапускаем
             docker compose -f docker-compose-prod.yml --env-file .env pull
             docker compose -f docker-compose-prod.yml --env-file .env up -d
             docker image prune -f
