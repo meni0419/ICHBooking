@@ -1,0 +1,75 @@
+# syntax=docker/dockerfile:1.6
+
+############################
+# Stage 1: builder (alpine)
+############################
+FROM python:3.13-alpine AS builder
+
+#ENV PYTHONDONTWRITEBYTECODE=1 \
+#    PYTHONUNBUFFERED=1 \
+#    VENV_PATH=/opt/venv
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Build deps для mysqlclient и колёс
+RUN apk add --no-cache \
+    build-base \
+    mariadb-connector-c-dev \
+    linux-headers
+
+# Виртуальное окружение
+#RUN python -m venv ${VENV_PATH}
+#ENV PATH="${VENV_PATH}/bin:$PATH"
+
+WORKDIR /app
+
+# Копируем только зависимости — лучший кеш
+COPY requirements.txt /app/requirements.txt
+
+# Быстрое кешируемое установка зависимостей (ускоряет пересборки)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
+    pip install --prefix=/install --no-cache-dir -r requirements.txt
+
+# ВАЖНО: исходники в builder не копируем — уменьшаем размер и ускоряем сборку.
+# Если у вас есть локальные editable-пакеты, верните COPY . /app и установку.
+
+############################
+# Stage 2: runtime (alpine)
+############################
+FROM python:3.13-alpine AS runtime
+
+# Только runtime-зависимости
+RUN apk add --no-cache \
+    mariadb-connector-c \
+    netcat-openbsd
+
+#ENV PYTHONDONTWRITEBYTECODE=1 \
+#    PYTHONUNBUFFERED=1 \
+#    VENV_PATH=/opt/venv \
+#    PATH="/opt/venv/bin:$PATH" \
+#    PORT=8000
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8000
+
+# Непривилегированный пользователь
+#RUN addgroup --system app && adduser --system --ingroup app app
+#RUN mkdir -p /app && chown app:app /app
+WORKDIR /app
+
+# Копируем готовое venv из builder
+#COPY --from=builder /opt/venv /opt/venv
+#COPY --from=builder /usr/local/bin/python3.13 /usr/local/bin/python3.13
+COPY --from=builder /install /usr/local
+
+# Затем основной код сразу с нужным владельцем
+#COPY --chown=app:app . /app
+COPY . /app
+
+#USER app
+
+EXPOSE 8000
+
+# Продовый entrypoint
+CMD ["sh", "docker/entrypointProd.sh"]
