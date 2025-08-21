@@ -11,7 +11,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT:-33063}:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./docker/db-init:/docker-entrypoint-initdb.d:ro
@@ -30,7 +30,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "${WEB_PORT:-80}:8000"
+      - "${WEB_PORT:-8000}:8000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:${PORT:-8000}/healthz || exit 1"]
