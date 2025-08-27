@@ -7,7 +7,7 @@ from .views import (
     ListMyRequestsForHostView,
     ConfirmBookingView,
     RejectBookingView,
-    CancelBookingView, BookingDetailView,
+    CancelBookingView, BookingDetailView, CompleteBookingView,
 )
 
 urlpatterns = [
@@ -16,6 +16,7 @@ urlpatterns = [
     path("requests/", ListMyRequestsForHostView.as_view(), name="bookings-requests"),  # GET
     path("<int:booking_id>/", BookingDetailView.as_view(), name="bookings-detail"),  # GET
     path("<int:booking_id>/confirm/", ConfirmBookingView.as_view(), name="bookings-confirm"),  # POST
-    path("<int:booking_id>/reject/", RejectBookingView.as_view(), name="bookings-reject"),    # POST
-    path("<int:booking_id>/cancel/", CancelBookingView.as_view(), name="bookings-cancel"),    # POST
+    path("<int:booking_id>/reject/", RejectBookingView.as_view(), name="bookings-reject"),  # POST
+    path("<int:booking_id>/cancel/", CancelBookingView.as_view(), name="bookings-cancel"),  # POST
+    path("<int:booking_id>/complete/", CompleteBookingView.as_view(), name="bookings-complete"),  # POST
 ]

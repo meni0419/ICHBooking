@@ -32,3 +32,10 @@ class CancelBookingCommand:
     actor_user_id: int  # гость или хост
     today: date
     cancel_deadline_days: int = 1  # можно переопределить при необходимости
+
+
+@dataclass(frozen=True)
+class CompleteBookingCommand:
+    booking_id: int
+    actor_user_id: int  # должен быть host
+    today: date
