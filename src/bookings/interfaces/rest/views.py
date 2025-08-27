@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from src.bookings.application.use_cases.complete_booking import CompleteBookingUseCase
 from src.common.interfaces.permissions import IsAuthenticatedAndActive
 
 from src.shared.errors import ApplicationError
@@ -25,7 +26,7 @@ from src.bookings.application.commands import (
     CreateBookingCommand,
     ConfirmBookingCommand,
     RejectBookingCommand,
-    CancelBookingCommand,
+    CancelBookingCommand, CompleteBookingCommand,
 )
 from src.bookings.application.queries import ListMyBookingsQuery, ListMyRequestsForHostQuery, GetBookingByIdQuery
 from src.bookings.application.use_cases.create_booking import CreateBookingUseCase
@@ -196,6 +197,28 @@ class CancelBookingView(APIView):
         )
         try:
             dto = CancelBookingUseCase(repo).execute(cmd)
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ApplicationError as e:
+            return response_from_app_error(e)
+        return Response(BookingDetailSerializer(dto).data, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class CompleteBookingView(APIView):
+    permission_classes = [IsAuthenticatedAndActive, IsHost]
+
+    def post(self, request, booking_id: int):
+        repo = DjangoBookingRepository()
+        cmd = CompleteBookingCommand(
+            booking_id=booking_id,
+            actor_user_id=request.user.id,
+            today=date.today(),
+        )
+        try:
+            dto = CompleteBookingUseCase(repo).execute(cmd)
         except PermissionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except ValueError as e:
