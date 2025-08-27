@@ -18,24 +18,24 @@ class CompleteBookingUseCase:
         if not booking:
             raise ApplicationError("Booking not found")
 
-        # Предварительные проверки на уровне use case (дублируют доменную защиту)
+        # Предварительные проверки
         if booking.host_id != cmd.actor_user_id:
-            # Хост может завершать только свои бронирования
             raise ApplicationError("Forbidden")
         if booking.status != BookingStatus.CONFIRMED:
-            # Завершать можно только подтверждённые брони
             raise ApplicationError("Only confirmed bookings can be completed")
-        if cmd.today < booking.end_date:
-            # Дата окончания должна уже наступить (сегодня или в прошлом)
+
+        # Дата окончания берётся из value object period
+        end_date = booking.period.end_date
+        if cmd.today < end_date:
             raise ApplicationError("Booking cannot be completed before end_date")
 
         try:
-            # Если в домене есть метод complete — используем его, чтобы соблюсти инварианты
-            if hasattr(booking, "complete") and callable(getattr(booking, "complete")):
-                booking.complete(actor_user_id=cmd.actor_user_id, today=cmd.today)
-            else:
-                # Фолбэк: проставляем статус напрямую, инварианты уже проверены выше
-                booking.status = BookingStatus.COMPLETED
+            # Используем доменную логику
+            booking.complete_if_finished(cmd.today)
+
+            if booking.status != BookingStatus.COMPLETED:
+                # На случай, если доменная логика не изменила статус (защита от несоответствий)
+                raise ApplicationError("Booking could not be completed")
 
             saved = self._repo.update(booking)
             return to_dto(saved)
