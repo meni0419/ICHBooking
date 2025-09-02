@@ -1,361 +1,432 @@
-# ICHBooking — План проекта (ROADMAP)
-
-Цели:
-
-- Реализовать функционал по требованиям (обязательные, дополнительные).
-- Следовать чистой архитектуре: domain / application / infrastructure / interfaces.
-- Использовать DRF, JWT (в куках), MySQL; позже — Docker и деплой на AWS.
-
-Статусные теги:
-
-- [ ] Не начато
-- 🔄 В процессе
-- ✅ Готово
-
-Навигация:
-
-- Этап 0. Инфраструктура и зависимости
-- Этап 1. Пользователи, аутентификация и авторизация (обязательно)
-- Этап 2. Объявления (CRUD + доступность) (обязательно)
-- Этап 3. Поиск, фильтрация, сортировка (обязательно)
-- Этап 4. Бронирования (обязательно)
-- Этап 5. Рейтинги и отзывы (обязательно)
-- Этап 6. Дополнительные требования (популярность, история поиска, просмотры)
-- Этап 7. Тесты (опционально, но рекомендуется)
-- Этап 8. Docker и AWS (дополнительно)
-- Приложение: Git-flow и порядок задач
-
----
-
-## Этап 0. Инфраструктура и зависимости
-
-Задача: Подготовить окружение, пакеты, настройки.
-
-- ✅ Переключение на MySQL
-    - Настройки: core/settings.py (DATABASES)
-    - Установить драйвер: mysqlclient (или PyMySQL)
-    - Создать базу данных ICHBooking в MySQL, настроить доступы в ENV.
-    - Миграции: python manage.py makemigrations && migrate
-
-- ✅ Подключение DRF
-    - Установить djangorestframework
-    - core/settings.py: добавить 'rest_framework' и базовые REST_FRAMEWORK настройки
-
-- ✅ JWT в куках (DRF + SimpleJWT)
-    - Установить djangorestframework-simplejwt
-    - core/settings.py: SIMPLE_JWT конфиг (lifetime, cookie names, rotation, samesite, secure), DRF аутентификатор
-    - src/users/interfaces/rest/urls.py: JWT endpoints (login/refresh/logout)
-    - src/users/interfaces/rest/views.py: вью для логина/логаута с установкой/очисткой cookie
-    - CSRF: продумать стратегию (например, чтение CSRF из куки + заголовок)
-
-- ✅ Swagger/OpenAPI
-    - Установить drf-spectacular (или drf-yasg)
-    - core/settings.py: spectacular настройки
-    - core/urls.py: схемы /api/schema/, /api/docs/
-
-- ✅ Базовая конфигурация INSTALLED_APPS
-    - core/settings.py: 'src.users', 'src.accommodations', 'src.bookings', 'src.reviews', 'src.common' (payments
-      отложим)
-
-Файлы и что в них будет:
-
-- core/settings.py — конфигурация БД (MySQL), DRF, JWT, Swagger.
-- core/urls.py — включение роутов приложений и Swagger.
-- src/*/interfaces/rest/urls.py — маршруты по приложениям.
-
----
-
-## Этап 1. Пользователи, аутентификация и авторизация (обязательное)
-
-Цели: Регистрация, вход, роли (арендодатель/арендатор), разграничение прав.
-
-- ✅ Доменные модели и роли
-    - src/users/domain/entities.py — UserEntity (id, name, email, roles: {host, guest}, is_active)
-    - src/users/domain/value_objects.py — Email, PasswordHash (при необходимости)
-    - src/users/domain/repository_interfaces.py — IUserRepository (контракты поиска/создания)
-    - src/users/domain/services.py — правила назначений ролей
-
-- ✅ Приложение (use-cases)
-    - src/users/application/commands.py — RegisterUser, AssignRoles
-    - src/users/application/queries.py — GetCurrentUser
-    - src/users/application/use_cases/ — обработчики команд/запросов
-
-- ✅ Инфраструктура (ORM и репозитории)
-    - src/users/infrastructure/orm/models.py — кастомная модель User (на базе AbstractUser)
-        - Поля: name (или first_name/last_name), email(unique), роли (например, JSON/ManyToMany/Choices/флаги)
-    - src/users/infrastructure/repositories.py — Django-реализация IUserRepository
-    - core/settings.py — AUTH_USER_MODEL = 'users.User'
-    - src/users/infrastructure/admin.py — регистрация модели в админке
-
-- ✅ Интерфейсы (REST, JWT)
-    - src/users/interfaces/rest/serializers.py — RegisterSerializer, UserSerializer
-    - src/users/interfaces/rest/views.py — RegisterView, LoginView (JWT cookie), LogoutView, MeView
-    - src/users/interfaces/rest/permissions.py — IsHost, IsGuest
-    - src/users/interfaces/rest/urls.py — /auth/register/, /auth/login/, /auth/logout/, /auth/me/
-
-- ✅ Права доступа
-    - Роль host: создавать/редактировать/удалять свои объявления
-    - Роль guest: просматривать/фильтровать
-
----
-
-## Этап 2. Объявления (CRUD + доступность) (обязательное)
-
-Цели: Создание, редактирование, удаление, доступность (активно/неактивно).
-
-- ✅ Домейн
-    - src/accommodations/domain/entities.py — Accommodation (id, title, description, location, price, rooms, type,
-      is_active, owner_id, created_at)
-    - src/accommodations/domain/value_objects.py — Location (city, region, country="DE"), Money/Price, HousingType (
-      Enum)
-    - src/accommodations/domain/dtos.py — AccommodationDTO
-    - src/accommodations/domain/repository_interfaces.py — IAccommodationRepository
-    - src/accommodations/domain/services.py — инварианты (валидность цены, названия и т.д.)
-
-- ✅ Приложение (use-cases)
-    - src/accommodations/application/commands.py — CreateAccommodation, UpdateAccommodation, DeleteAccommodation,
-      ToggleAvailability
-    - src/accommodations/application/queries.py — GetAccommodationById
-    - src/accommodations/application/use_cases/ — обработчики
-
-- ✅ Инфраструктура
-    - src/accommodations/infrastructure/orm/models.py — ORM модель Accommodation (FK на users.User)
-    - src/accommodations/infrastructure/repositories.py — реализация IAccommodationRepository
-    - src/accommodations/infrastructure/admin.py — регистрация модели
-
-- ✅ Интерфейсы (REST)
-    - src/accommodations/interfaces/rest/serializers.py — AccommodationCreateUpdateSerializer,
-      AccommodationDetailSerializer
-    - src/accommodations/interfaces/rest/views.py — ViewSet/классы для CRUD и toggle
-        - Create/Update/Delete — только для host-владельца
-        - Toggle availability — только владелец
-    - src/accommodations/interfaces/rest/filters.py — фильтры позже (этап 3)
-    - src/accommodations/interfaces/rest/permissions.py — IsOwnerOrReadOnly, IsHost
-    - src/accommodations/interfaces/rest/urls.py — /accommodations/…
-
----
-
-## Этап 3. Поиск, фильтрация, сортировка (обязательное)
-
-Цели: Поиск по ключевым словам в заголовке/описании, фильтрация и сортировка.
-
-- ✅ Домейн
-    - src/accommodations/domain/dtos.py — SearchQueryDTO (keyword, price_min/max, city/region, rooms_min/max, type,
-      sort)
-    - src/accommodations/domain/services.py — правила валидации запроса
-
-- ✅ Приложение
-    - src/accommodations/application/queries.py — SearchAccommodations
-    - src/accommodations/application/use_cases/ — обработчик поиска (делегирует в репозиторий; параметризует сортировку)
-
-- ✅ Инфраструктура
-    - src/accommodations/infrastructure/repositories.py — методы фильтрации по ORM (Q, annotate)
-    - Индексы в БД: title, city/region, created_at, price
-
-- ✅ Интерфейсы (REST)
-    - src/accommodations/interfaces/rest/filters.py — DRF фильтры/FilterSet
-    - src/accommodations/interfaces/rest/views.py — endpoint поиска: /accommodations/search/
-    - Поддержать сортировку: price asc/desc, created_at asc/desc
-
----
-
-## Этап 4. Бронирования (обязательное)
-
-Цели: Создание, просмотр своих, отмена, подтверждение/отклонение хостом.
-
-- ✅ Домейн
-    - src/bookings/domain/entities.py — Booking (id, accommodation_id, guest_id, host_id, start_date, end_date, status:
-      REQUESTED/CONFIRMED/CANCELLED/REJECTED, created_at)
-    - src/bookings/domain/value_objects.py — StayPeriod (валидация дат)
-    - src/bookings/domain/dtos.py — BookingDTO
-    - src/bookings/domain/repository_interfaces.py — IBookingRepository
-    - src/bookings/domain/services.py — валидация пересечений дат, политика отмены
-
-- ✅ Приложение
-    - src/bookings/application/commands.py — CreateBooking, CancelBooking, ConfirmBooking, RejectBooking
-    - src/bookings/application/queries.py — ListMyBookings (guest), ListMyRequests (host)
-    - src/bookings/application/use_cases/ — обработчики
-
-- ✅ Инфраструктура
-    - src/bookings/infrastructure/orm/models.py — ORM Booking (FK на User, Accommodation)
-    - src/bookings/infrastructure/repositories.py — реализация IBookingRepository; проверки пересечений в запросах
-
-- ✅ Интерфейсы (REST)
-    - src/bookings/interfaces/rest/serializers.py — BookingCreateSerializer, BookingDetailSerializer
-    - src/bookings/interfaces/rest/views.py — эндпоинты:
-        - POST /bookings/ — создать
-        - GET /bookings/me/ — мои (guest)
-        - GET /bookings/requests/ — запросы, где я host
-        - POST /bookings/{id}/cancel/
-        - POST /bookings/{id}/confirm/
-        - POST /bookings/{id}/reject/
-    - Разрешения: гостю — создавать/смотреть свои; хосту — подтверждать/отклонять заявки на свои объявления
-
----
-
-## Этап 5. Рейтинги и отзывы (обязательное)
-
-Цели: Оставить отзыв к объявлению после завершённого бронирования; список отзывов.
-
-- ✅ Домейн
-    - src/reviews/domain/entities.py — Review (id, accommodation_id, author_id, rating, text, created_at)
-    - src/reviews/domain/dtos.py — ReviewDTO
-    - src/reviews/domain/repository_interfaces.py — IReviewRepository
-    - src/reviews/domain/services.py — политика: отзыв можно оставить только гостю, у которого было завершённое
-      бронирование
-
-- ✅ Приложение
-    - src/reviews/application/commands.py — CreateReview
-    - src/reviews/application/queries.py — ListReviewsForAccommodation
-    - src/reviews/application/use_cases/ — обработчики
-
-- ✅ Инфраструктура
-    - src/reviews/infrastructure/orm/models.py — ORM Review
-    - src/reviews/infrastructure/repositories.py — реализация IReviewRepository
-
-- ✅ Интерфейсы (REST)
-    - src/reviews/interfaces/rest/serializers.py — ReviewCreateSerializer, ReviewSerializer
-    - src/reviews/interfaces/rest/views.py — POST /reviews/, GET /accommodations/{id}/reviews/
-    - Права: автор — только гость с завершённым бронированием данного объявления
-
----
-
-## Этап 6. Дополнительные требования
-
-### 6.1. Популярность
-
-- ✅ Подсчёт просмотров/отзывов для сортировки
-    - Инфраструктура: агрегирующие запросы
-    - Интерфейсы: параметр sort=popular
-
-### 6.2. История поиска
-
-- ✅ Логирование поисковых запросов
-    - src/common/domain/entities.py — SearchQueryLog
-    - src/common/infrastructure/orm/models.py — ORM модель
-    - Запись при вызове поиска (этап 3)
-    - Эндпоинт: GET /search/popular/ — топ частых ключевых слов
-
-### 6.3. История просмотров
-
-- ✅ Логирование фактов просмотра объявления
-    - src/common/domain/entities.py — ListingViewLog
-    - src/common/infrastructure/orm/models.py — ORM модель
-    - Хук в детальный просмотр объявления
-    - Эндпоинт сортировки по просмотрам (этап 3)
-
-### 6.4. Сортировка по отзывам
-
-- ✅ Сортировка объявлений по количеству и рейтингу отзывов
-    - Инфраструктура: агрегация рейтинга и количества отзывов
-    - Интерфейсы: параметры sort=rating,reviews
-
----
-
-## Этап 7. Тесты (рекомендуется)
-
-- ✅ feature/tests/base
-    - Общая тестовая инфраструктура: настроечные утилиты, базовые фабрики без внешних либ (простые helpers), общие
-      mixin’ы для API-клиента с CSRF/JWT в куках.
-    - helpers для создания юзера/логина (JWT в куках), получения CSRF (вызов /api/csrf/), удобный APIClient с
-      credentials=‘include’ аналогично прод-логике.
-    - Фикстуры: фабрики доменных DTO. Простые “фабрики” (функции) для доменных DTO и ORM-моделей (без factory_boy).
-- ✅ Unit-тесты доменных сервисов
-    - src/*/tests/unit/ — тесты правил, инвариантов
-    - feature/tests/unit-unit-accommodations, unit-bookings, unit-reviews, unit-users Юнит-тесты доменных правил (value
-      objects, services, entities).
-    - Примеры: StayPeriod.overlaps(), доменная фабрика брони (пересечения), политика create_review (уникальность по
-      booking_id), Location/Price валидации и пр.
-- ✅ Интеграционные тесты интерфейсов (DRF)
-    - src/*/tests/integration/ — API кейсы: аутентификация, CRUD объявлений, поиск, бронирование, отзывы
-    - feature/tests/integration-
-    - integration-auth, integration-accommodations, integration-search, integration-bookings, integration-reviews
-    - Интеграционные тесты DRF: сценарии API end-to-end.
-    - Auth: register/login/logout/me с куками/CSRF.
-    - Accommodations: CRUD, toggle, проверки прав, сериалайзеры.
-    - Search: фильтры, sort=created_at/price/popular/views/comments; проверка инкремента impressions_count и логирования
-      истории поиска.
-    - Bookings: create/confirm/reject/cancel с ролями и статусами.
-    - Reviews: create/list/update/delete с правилами (booking завершён, уникальность по booking_id).
-    - Views logging: детальные просмотры, счётчик views_count растёт.
-
----
-
-## Этап 8. Docker, AWS и git environments
-
-- 🔄 Docker
-    - Dockerfile — сборка Django + gunicorn
-    - docker-compose.yml — web + MySQL
-    - ENV/секреты — через переменные окружения
-    - Уменьшить размер образа +multistage build
-- [ ] GitHub Environments:
-    - Settings → Environments → Production.
-    - Секреты: DJANGO_SECRET_KEY, DB_PASSWORD, DB_ROOT_PASSWORD, JWT_* и т.д.
-- AWS
-    - EC2 (t3.micro/t3.small), Security Group: 80/443/22; 8000 только изнутри (если за Nginx).
-    - RDS MySQL (или пока локальный MySQL в контейнере).
-    - Nginx как reverse proxy → web:8000 (Gunicorn).
-    - CI/CD (GitHub Actions):
-        - Build & push образ в GitHub Container Registry или ECR.
-        - На EC2 — docker compose pull && docker compose up -d.
-
----
-
-## Git-flow и порядок задач
-
-Рекомендуемый порядок веток:
-
-1. feature/setup-infra (Этап 0)
-2. feature/users-auth (Этап 1)
-3. feature/accommodations-crud (Этап 2)
-4. feature/search-filter-sort (Этап 3)
-5. feature/bookings (Этап 4)
-6. feature/reviews (Этап 5)
-7. feature/extra-popularity-search-history-views (Этап 6)
-8. feature/tests (Этап 7)
-9. feature/docker-aws (Этап 8)
-
-Каждая ветка:
-
-- Реализует соответствующие задачи по слоям (domain → application → infrastructure → interfaces).
-- Пишем миграции только на уровне infrastructure/orm/models.py.
-- После успешного локального тестирования → PR → ревью → merge в main.
-
----
-
-## Сводка по файлам (куда писать код)
-
-- Пользователи:
-    - domain: src/users/domain/* (entities, repository_interfaces, services)
-    - application: src/users/application/* (commands/queries/use_cases)
-    - infrastructure: src/users/infrastructure/orm/models.py, repositories.py
-    - interfaces: src/users/interfaces/rest/* (serializers, views, urls, permissions)
-
-- Объявления:
-    - domain: src/accommodations/domain/*
-    - application: src/accommodations/application/*
-    - infrastructure: src/accommodations/infrastructure/*
-    - interfaces: src/accommodations/interfaces/rest/*
-
-- Поиск/Фильтры/Сортировка:
-    - application/queries + infrastructure/repositories + interfaces/rest/filters
-
-- Бронирования:
-    - domain/application/infrastructure/interfaces в src/bookings/*
-
-- Отзывы:
-    - domain/application/infrastructure/interfaces в src/reviews/*
-
-- Общие сущности:
-    - src/common/* (история поиска, просмотров)
-    - src/shared/* (errors, result, utils)
-
----
-
-## Примечания по безопасности и UX
-
-- JWT в куках: HttpOnly, Secure (в проде), SameSite=Lax/None (если нужен кросс-домен), рефреш-токен в куке, access —
-  опционально в куке/памяти.
-- CSRF: для cookie-based аутентификации — поддерживать CSRF токен.
-- Валидация входных данных: serializers + доменные правила.
-- Пагинация и лимиты: использовать DRF пагинацию; ограничивать размер выборок.
+# ICH Booking
+
+### Почему такая архитектура, если проект на Django
+- Это реализация принципов Чистой/Гексагональной архитектуры: отделяем бизнес‑логику (domain) и сценарии приложения (application) от веб‑фреймворка, базы данных и транспорта (infrastructure, interfaces).
+- Django здесь — инфраструктура и веб‑интерфейс: ORM, DRF, маршрутизация, сериализация, аутентификация.
+- Причины:
+  - Тестируемость: доменные правила тестируются без Django/БД.
+  - Ясные границы: бизнес‑правила не “растворяются” в моделях/вьюхах/сериалайзерах.
+  - Заменяемость: можно заменить ORM/БД без переписывания домена и use‑cases.
+  - Упрощение сложной предметной области: явные сценарии (use_cases) с правилами, валидациями, политиками.
+- Да, это “не по‑даджанговски” в духе “fat models + slim views”, но оправдано, когда требований и бизнес‑правил много (бронь, роли, статусы, валидации, политики, сортировки/логирование/популярность).
+
+### Что означают слои
+- domain (предметная область):
+  - entities.py — сущности с инвариантами и поведением (методы вроде rename, toggle_active).
+  - value_objects.py — неизменяемые “ценностные” объекты (например, Price, Location), валидируют себя в конструкторе.
+  - services.py — доменные сервисы (чистые функции, бизнес‑правила: фабрики создания, обновления, нормализация запросов поиска).
+  - repository_interfaces.py — контракты портов (Protocol), которые описывают, КАК домен хочет читать/писать данные, не зная где они лежат.
+  - dtos.py — переносимые структуры данных между слоями (без зависимостей от Django).
+- application (сценарии/варианты использования):
+  - commands.py — команды на изменение состояния (Create/Update/Delete/Confirm/Cancel и т.п.).
+  - queries.py — запросы на чтение (получить по id, поиск, списки).
+  - use_cases/* — обработчики команд/запросов. Они:
+    - собирают VO/Entities из входа,
+    - вызывают доменные сервисы,
+    - обращаются к репозиториям через интерфейсы домена,
+    - возвращают DTO для интерфейсов.
+  - mappers.py — сопоставление Entities → DTO (и иногда обратно).
+- infrastructure (адаптеры/реализации портов):
+  - orm/models.py — Django модели.
+  - repositories.py — реализации доменных интерфейсов репозиториев на Django ORM. Делают маппинг ORM <-> Domain, инкременты, агрегации, сортировки на стороне БД.
+- interfaces (край/транспорт):
+  - rest/serializers.py — DRF‑сериалайзеры: валидация входа/формирование ответа под HTTP/JSON.
+  - rest/views.py — APIView/ViewSet: читают запрос, валидируют сериализатором, создают команду/запрос и вызывают use‑case. Возвращают сериализованный ответ.
+  - permissions.py — права доступа уровня API.
+  - urls.py — маршрутизация.
+
+### Почему вводим use_cases
+- Явная формулировка “что делает система”: CreateAccommodation, SearchAccommodations, ConfirmBooking, и т.д.
+- Сосредоточение бизнес‑правил сценария в одном месте: преобразования входа → VO → Entity → доменные сервисы → репозиторий → DTO.
+- Легко тестировать отдельно от веб‑слоя и базы.
+- Устраняет “анемию” и спагетти: логика не размазана по вьюхе/модели/сериалайзеру.
+
+### Почему кажется, что некоторые вещи “дубрируются”
+- repository_interfaces.py vs repositories.py:
+  - В домене — контракт (порт), независимый от Django/БД.
+  - В инфраструктуре — адаптер (реализация) под Django ORM. Это не дублирование, а разделение интерфейса и реализации.
+- dtos.py vs serializers.py:
+  - DTO — внутренняя переносимая форма для домен ↔ приложение ↔ инфраструктура. Не знает о DRF/Django.
+  - Serializer — форма ввода/вывода для HTTP. Он знает о валидации, полях, форматах, и может отличаться от внутреннего представления.
+  - Мапперы как раз и переводят между Entity/DTO и форматом ответа.
+- commands.py и queries.py — это CQRS‑подход “лайт”: разделяем чтение и запись. У них разная модель валидации, разные пути, разные оптимизации (например, на чтение используем тяжелые агрегаты/индексы, на запись — транзакции/инварианты).
+- entities.py и value_objects.py — не дубли, а разные роли: сущности обладают идентичностью и поведением, VO — маленькие неизменяемые типы со строгой валидацией.
+
+### Коротко про каждый из перечисленных файлов
+- commands.py — команды на изменение (создать объявление, обновить, удалить, переключить активность, подтвердить бронь, отменить и т.п.).
+- queries.py — запросы на чтение (по id, поиск, мои брони, мои объявления, отзывы и т.п.).
+- entities.py — доменные сущности (Accommodation, Booking, Review…) с методами, которые гарантируют инварианты.
+- value_objects.py — неизменяемые типы с валидацией (Price, Location, StayPeriod…).
+- services.py — доменные правила и фабрики (создать сущность с проверками, применить изменения, нормализовать параметры поиска, политики статусов и т.п.).
+- repository_interfaces.py — интерфейсы репозиториев (порт домена).
+- repositories.py — инфраструктурные реализации портов на Django ORM.
+- dtos.py — переносимое описание данных, которыми обмениваются слои и возвращают наружу из use‑case.
+
+### Путь запроса/ответа пользователя: по шагам
+Пример 1. Создание объявления (POST /api/accommodations/)
+1) interfaces/rest/views: приходит HTTP‑запрос. Вью выбирает сериалайзер для входа.
+2) interfaces/rest/serializers: валидируют поля (title, city, price_eur…), приводят к нужным типам.
+3) application: формируется Create…Command из валидированных данных + id владельца из request.user.
+4) use_cases/Create…UseCase:
+   - Строит VO (Location, Price, RoomsCount, HousingType).
+   - Вызывает доменный сервис create_accommodation, который проверяет инварианты и создает Entity.
+   - Обращается к репозиторию (через интерфейс домена) — инфраструктура сохраняет в БД, возвращает доменную Entity.
+   - Маппер переводит Entity в AccommodationDTO.
+5) interfaces/rest/serializers: DTO превращается в JSON ответа, отправляется 201/200.
+
+Пример 2. Поиск объявлений (GET /api/accommodations/search/?…)
+1) interfaces: сериалайзер query‑параметров валидирует фильтры/сортировку/страницу.
+2) application: формирует Search…Query.
+3) domain.services: нормализует запрос (обрезка keyword, перестановка min/max, лимиты пагинации).
+4) infrastructure.repositories: реализация репозитория делает Django ORM запрос:
+   - фильтры по полям/диапазонам/типам жилья,
+   - сортировка по параметру,
+   - пагинация,
+   - возможно, побочный эффект (инкремент показов найденных — через транзакцию и update F()).
+   - маппинг ORM‑моделей в доменные Entities.
+5) application: маппер собирает список DTO + мета пагинации в SearchResultDTO.
+6) interfaces: сериалайзер ответа превращает DTO в JSON.
+
+Пример 3. Бронирование (POST /api/bookings/)
+1) interfaces: сериалайзер валидирует даты и объект размещения.
+2) application: CreateBookingCommand.
+3) domain: StayPeriod (VO) валидирует период, сервисы проверяют правила (пересечения, статус), создают Entity Booking.
+4) infrastructure: репозиторий фиксирует в БД, возвращает доменную сущность; при подтверждении/отклонении/отмене — меняет статус с проверками.
+5) application: маппит в BookingDTO; interfaces возвращает JSON.
+
+Где происходят проверки и кто за что отвечает
+- Синтаксическая/форматная валидация ввода: serializers (обязательные поля, диапазоны, типы).
+- Инварианты предметной области: value_objects (в конструкторе), entities (методы), services (фабрики/политики).
+- Доступ/права: permissions на уровне interfaces; в репозитории может быть дополнительная фильтрация по owner_id при изменении/удалении.
+- Производительность/агрегации/побочные эффекты: repositories (ORM‑уровень, индексы, annotate, F‑выражения, транзакции).
+- Сборка результата и формат ответа: use‑case (DTO) → serializer (JSON).
+
+Плюсы подхода
+- Чёткая ответственность слоёв и границы.
+- Лёгкая модульная тестируемость (domain/services без Django; use‑cases с подменой репозиториев).
+- Контролируемая сложность при росте требований (бронь, отзывы, сортировки, логирование популярности).
+- Уменьшается связность с фреймворком — проще миграции/рефакторинг.
+
+Компромиссы
+- Больше файлов и “церемоний”, чем в “классическом” Django.
+- Нужно дисциплинированно поддерживать маппинги и не пускать “Django‑знания” в domain/application.
+
+### В защиту подхода проекта
+- Мы разделили бизнес‑ядро от фреймворка по принципам Чистой/Гексагональной архитектуры.
+- Ввод/вывод и инфраструктура (Django/DRF/ORM) — адаптеры. Бизнес‑правила — в domain/services/entities/VO.
+- Сценарии описаны use‑cases (commands/queries), что упрощает тестирование и масштабирование.
+- Разные “репозитории” и “DTO/Serializer” — не дублирование, а границы между портами/адаптерами и внутренними/внешними моделями данных.
+- Это особенно оправдано, т.к. у нас:
+  - сложные доменные правила (бронь, статусы, роли),
+  - разные модели чтения и записи (поиск/сортировки/агрегации vs транзакции/инварианты),
+  - доп. требования (история запросов, просмотры, популярность, рейтинги).
+
+
+# Что делают сигналы в проекте
+- Назначение: поддерживать в модели размещения (Accommodation) денормализованные поля average_rating и reviews_count в актуальном состоянии при изменениях отзывов (Review).
+- Точки входа:
+    - post_save(Review): срабатывает при создании/обновлении отзыва.
+    - post_delete(Review): срабатывает при удалении отзыва.
+
+### Ключевая логика по шагам
+1. Триггер
+
+- Когда отзыв создан/обновлён/удалён, Django отправляет сигнал post_save или post_delete для модели Review.
+
+1. Отложенный пересчёт через on_commit
+
+- В обработчиках сигналов используется transaction.on_commit(...).
+- Зачем: чтобы пересчёт выполнялся только после успешного коммита внешней транзакции. Это гарантирует, что:
+    - изменения в таблице reviews уже видны в БД (aggregate вернёт правильные значения),
+    - не будет “грязного чтения” и гонки с откатами транзакций.
+
+1. Пересчёт агрегатов
+
+- Функция update_accommodation_rating(accommodation_id):
+    - Делает aggregate по Review: avg=Avg("rating"), cnt=Count("id") для данного accommodation_id.
+    - Нормализует среднее:
+        - _quantize_rating(value) округляет Decimal до 2 знаков по правилу ROUND_HALF_UP (классическое банковское округление).
+        - При пустых значениях avg → 0.00.
+
+    - Преобразует Count к int (на случай None).
+
+1. Атомарное обновление денормализованных полей
+
+- Accommodation.objects.filter(id=...).update(average_rating=..., reviews_count=...)
+- Используется update(…) на QuerySet, а не save(), чтобы:
+    - выполнить один SQL UPDATE без загрузки объекта в память,
+    - избежать каскадных побочных эффектов и вызовов сигналов для Accommodation,
+    - сделать операцию максимально короткой и атомарной.
+
+### Почему это важно и чем хорошо такое решение
+- Производительность чтения: сортировки и фильтры по рейтингу/кол-ву отзывов читают готовые поля без джойнов и runtime-агрегаций.
+- Консистентность: on_commit гарантирует корректные агрегаты после транзакции.
+- Идемпотентность: даже если несколько сигналов сработают подряд для одного accommodation (например, массовое обновление отзывов), итоговое состояние будет актуальным, потому что каждый пересчёт берёт свежую агрегацию из БД.
+
+### Особенности и подводные камни
+- Сигналы не срабатывают при:
+    - bulk_update/bulk_create с batch_size (для них Django по умолчанию не шлёт post_save на каждый объект),
+    - QuerySet.update(...) на Review (обходит ORM сигнализацию).
+    - Если такие операции понадобятся — заведи отдельный “ручной” пересчёт (менеджмент-команда или сервис).
+
+- Кратные срабатывания:
+    - Если в одной транзакции несколько раз сохранить разные отзывы одного и того же accommodation, каждый обработчик повесит свою функцию в on_commit. При коммите все они отработают; возможны лишние повторные пересчёты. Это не ломает консистентность, но можно оптимизировать, если станет узким местом (например, собрать уникальные accommodation_id в локальный Set и вызывать пересчёт один раз).
+
+- Точность Decimal:
+    - Округление до 2 знаков фиксировано; если бизнес-правило изменится (например, хранить 1 знак) — нужно будет поменять quantize.
+
+- Регистрация сигналов:
+    - Важно, чтобы модуль с сигналами импортировался при старте приложения (обычно в apps.py → ready() или через импорт в **init**.py приложения). Судя по структуре, файл signals.py лежит рядом с моделями отзывов и подключается при инициализации приложения.
+
+### Как это выглядит в пользовательском сценарии
+- Пользователь добавляет/редактирует/удаляет отзыв → коммит транзакции → сигнал откладывает пересчёт → после коммита читаются агрегаты Review → в Accommodation атомарно записываются average_rating и reviews_count.
+- После этого любая выдача объявлений (поиск/сортировка по рейтингу/кол-ву отзывов) работает быстро и без дополнительных агрегаций.
+
+### Если понадобится оптимизация
+- Дедупликация on_commit по accommodation_id (в рамках одной транзакции).
+- Перенос пересчёта в фоновую очередь (Celery) для массовых изменений.
+- Материализованные представления/триггеры на уровне БД — если потребуется ещё выше производительность и предсказуемость.
+
+### Итого
+- Сигналы служат для автоматической синхронизации денормализованных полей объявлений при изменениях в отзывах.
+- Корректность обеспечивается агрегатами после коммита и атомарным UPDATE.
+- Решение простое, быстрое на чтение и надёжное при типовых сценариях.
+
+### Зачем используется lambda в on_commit
+- transaction.on_commit ожидает нулераргументный callable, который будет вызван ПОСЛЕ успешного commit транзакции.
+- Наша функция update_accommodation_rating требует параметр accommodation_id. Нужно “упаковать” вызов с аргументом в нулераргументный callable — для этого удобно использовать:
+    - lambda: update_accommodation_rating(instance.accommodation_id), или
+    - эквивалентный functools.partial(update_accommodation_rating, instance.accommodation_id).
+
+- Важный эффект замыкания: lambda захватывает текущее значение instance.accommodation_id в момент регистрации on_commit. Это гарантирует, что при реальном вызове (после коммита) будет использовано именно то id, которое соответствовало записанному/удалённому отзыву.
+- Почему не вызвать напрямую update_accommodation_rating(...)? Потому что это выполнится сразу, внутри транзакции, и может увидеть несогласованное состояние (до коммита) или вообще не должно выполняться, если транзакция откатится. on_commit откладывает работу до успешного коммита.
+
+### Итого: lambda — это адаптер под требование on_commit (нужен нулераргументный колбэк) и одновременно способ безопасно захватить аргументы.
+### Зачем параметр sender в сигналах
+- sender — это класс модели, которая отправила сигнал. В данном случае — Review.
+- Для чего он нужен:
+    - Фильтрация подписки: в декораторе @receiver(..., sender=Review) мы явно ограничиваем, что обработчик реагирует только на сигналы этой модели. Это производительно и исключает случайные срабатывания на другие модели.
+    - Универсальные обработчики: если бы один обработчик слушал несколько моделей, внутри можно было бы различать их по sender.
+    - Соответствие контракту Django: сигнатура обработчиков сигналов по API включает sender; это часть стандартной формы, даже если внутри он не используется.
+
+- Практическая польза в текущем коде: явная привязка к Review гарантирует, что пересчёт рейтинга запускается только при изменениях этой модели и не “стреляет” на другие post_save/post_delete.
+
+### Итого
+- lambda в on_commit — чтобы отложить вызов до коммита и передать аргументы через замыкание.
+- sender — идентификатор модели-источника сигнала; позволяет корректно подписываться и отличать источники в обработчике.
+
+## Тестирование
+
+### Зачем вообще разные типы тестов
+- Unit (юнит): проверяют чистую доменную логику без БД и Django-стека. Быстрые, детальные.
+- Integration (интеграционные): прогоняют полный путь HTTP → сериалайзеры → permissions → use-cases → репозитории/ORM → HTTP-ответ. Медленнее, зато проверяют весь сценарий.
+
+### Что делает Django TestCase/TransactionTestCase/SimpleTestCase
+- SimpleTestCase:
+    - Не поднимает тестовую БД. Подходит для чистой логики (entities, value objects, services).
+    - Быстрый запуск, нет миграций.
+
+- TestCase:
+    - Поднимает тестовую БД (в памяти или отдельной), оборачивает каждый тест в транзакцию и откатывает её после теста.
+    - Удобно для API/ORM тестов: не нужно вручную чистить БД.
+
+- TransactionTestCase:
+    - Более «низкоуровневый» вариант, не использует атомарную транзакцию на тест, а делает полную очистку данных. Нужен редко (например, для проверки поведения транзакций/сигналов on_commit).
+
+### API-клиент и аутентификация
+- rest_framework.test.APIClient имитирует HTTP-запросы к вашим DRF-вьюхам.
+- force_authenticate(user=…) — «притворяемся» аутентифицированным пользователем для теста, минуя реальный логин. Удобно для проверки прав.
+- CSRF:
+    - Если логика использует cookie-based JWT + CSRF, удобно иметь helper, который ставит корректные заголовки/куки в клиент перед POST/PATCH/DELETE.
+
+### Зачем нужен setUp / tearDown / setUpTestData
+- setUp(self):
+    - Вызывается перед КАЖДЫМ тестом.
+    - Подходит для подготовки данных, которые могут изменяться в ходе теста: клиент, пользователи, объекты в БД.
+    - Гарантирует «чистое» состояние для каждого теста за счёт отката транзакции после теста (в TestCase).
+
+- tearDown(self):
+    - Вызывается после каждого теста. Обычно не нужен в TestCase, так как транзакция откатывается сама; полезен, если открывали файлы/сокеты/патчили что-то глобально.
+
+- setUpTestData(cls):
+    - Класс-метод — выполняется один раз на класс тестов. Данные записываются в БД ОДИН раз, а дальше каждый тест получает их в «снапшоте» благодаря транзакциям.
+    - Ускоряет тесты, если одна и та же фикстура нужна всем кейсам и не будет модифицироваться.
+
+### Как выглядит жизненный цикл одного теста (TestCase)
+1. Если объявлен setUpTestData — выполняется один раз перед всеми тестами класса (создаёт общие данные).
+2. Перед стартом теста открывается транзакция.
+3. Выполняется setUp — создаёт/инициализирует свежие данные для теста, клиент и т.п.
+4. Запускается тело теста (assert’ы).
+5. Выполняется tearDown (если есть).
+6. Транзакция откатывается — БД возвращается к состоянию до setUp (и, если было, до setUpTestData).
+
+### Как писать юнит-тесты домена
+- Используйте SimpleTestCase, чтобы избежать поднятия БД.
+- Создавайте сущности напрямую и проверяйте их поведение: методы rename, toggle_active, валидации VO и т.д.
+- Плюс: очень быстро, выявляет ошибки в чистой логике.
+
+### Как писать интеграционные тесты API
+- Наследуйтесь от TestCase.
+- В setUp создавайте:
+    - APIClient,
+    - пользователей/роли (через фабрики),
+    - тестовые объекты (размещение, бронирования и т.д.).
+
+- Вызывайте HTTP-эндпоинты и проверяйте:
+    - коды ответов (200/201/401/403/404/204),
+    - права доступа,
+    - структуру JSON и значения полей,
+    - побочные эффекты (инкремент просмотров, изменение статуса/активности, создание/удаление записей в БД),
+    - idempotency и валидацию (ошибки ввода → 400 и т.п.).
+
+### Сигналы и транзакции в тестах
+- TestCase запускает каждый тест в атомарной транзакции; сигналы on_commit исполняются при коммите.
+- Это значит, что код, который полагается на transaction.on_commit (например, пересчёт рейтингов), отработает к моменту завершения запроса или явного коммита внутри вашего кода. В тестах API это обычно прозрачно — вы получаете уже актуальные данные в ответах.
+
+### Фабрики и фикстуры
+- «Фабрики» — удобные функции/хелперы для создания пользователей, объявлений и т.д. Они скрывают детали полей и ускоряют написание тестов.
+- Хорошая практика — иметь фабрики доменных DTO и ORM-объектов, чтобы тесты были компактными и выразительными.
+
+### Мокаем ли мы что-то?
+- В юнит-тестах use-case’ов можно мокать репозитории (контракты), чтобы проверить логику сценариев без реальной БД.
+- В интеграционных тестах лучше использовать реальную реализацию репозитория и ORM, чтобы тестировать end-to-end.
+
+### Полезные советы
+- Именование тестов: test_<что_проверяем>_<ожидаемый_итог>() — легко читать в отчётах.
+- Один тест — один сценарий. Если нужно проверить несколько веток — лучше несколько тестов.
+- Проверяйте не только «счастливые» пути, но и негативные кейсы (403/400/404).
+- Следите, чтобы setUp не делал лишней работы — выносите общие неизменяемые данные в setUpTestData.
+- Если проверяете сортировки/пагинацию — создавайте достаточно данных, чтобы увидеть реальную выборку, и явно проверяйте порядок/границы.
+
+### Диагностика и производительность
+- Запуск тестов с verbosity:
+    - python manage.py test -v 2
+
+- Ограничить набор:
+    - python manage.py test src/accommodations/tests/integration -k "search"
+
+- Покрытие:
+    - Включите coverage.py и прогоняйте хотя бы для критичных модулей (use-cases, services).
+
+### Итого
+- setUp — готовит свежие данные на каждый тест; setUpTestData — один раз на класс, ускоряет повторное использование данных; tearDown — для явной очистки нестандартных ресурсов.
+- SimpleTestCase — для чистой логики без БД; TestCase — для API/ORM с автоматическим откатом изменений.
+- APIClient + фабрики + проверки прав/валидации/побочных эффектов обеспечивают надёжные интеграционные тесты, максимально близкие к реальному использованию.
+
+## Автоматизация 
+### Часть 1. Dockerизация (как запускается приложение в контейнерах)
+1) Образ приложения (DockerfileProd — multi-stage)
+- Stage builder:
+  - Базовый образ: python:3.13-alpine.
+  - Устанавливаются build-зависимости (для mysqlclient и сборки wheels).
+  - Кэшируемая установка зависимостей из requirements.txt в префикс /install (ускоряет пересборки).
+- Stage runtime:
+  - Лёгкий рантайм-образ на python:3.13-alpine.
+  - Ставятся только runtime-пакеты (mariadb-connector-c, netcat).
+  - Копируются установленные пакеты из builder (/install → /usr/local).
+  - Копируется исходный код проекта.
+  - Устанавливается CMD на запуск entrypoint скрипта docker/entrypointProd.sh.
+  - Порт 8000 открыт (EXPOSE 8000).
+
+### Зачем такой подход:
+- Multi-stage уменьшает размер финального образа и ускоряет сборку за счёт кеширования зависимостей.
+- Разделяются build-зависимости и runtime-зависимости.
+
+2) Продовый entrypoint (docker/entrypointProd.sh)
+- Ждёт доступности БД (DB_HOST:DB_PORT) через nc (netcat), чтобы не упасть при старте раньше MySQL.
+- Управляет миграциями и сборкой статики флагами окружения:
+  - RUN_MIGRATIONS=true|false
+  - RUN_COLLECTSTATIC=true|false
+  - Если статика уже собрана — повторно не собирает (ускоряет рестарты).
+- Запускает gunicorn с параметрами через переменные окружения (кол-во воркеров, таймаут).
+- В итоге веб-приложение стартует на 0.0.0.0:8000.
+
+3) Компоновка сервисов (docker-compose-prod.yml)
+- Сервис db:
+  - Образ mysql:8.0 с нужной кодировкой utf8mb4.
+  - ENV: имя БД, пользователь, пароли (из .env/секретов).
+  - Порт проброшен на хост (по умолчанию 33063→3306) — удобно для админки и отладки.
+  - Том db_data для персистентности.
+  - Инициализация SQL-скриптами из ./docker/db-init (каталог монтируется read-only).
+  - Healthcheck на ping MySQL — это важно для зависимости web.
+- Сервис web:
+  - Образ из ECR: <registry>/ichbooking-web:prod.
+  - Подтягивает переменные окружения из .env.
+  - depends_on: ждет, пока db станет healthy, прежде чем стартовать.
+  - Порт 8000 проброшен на хост.
+  - Healthcheck дергает эндпоинт /healthz.
+  - Политика restart: unless-stopped.
+- Общие тома:
+  - db_data для данных MySQL.
+
+Зачем healthchecks и depends_on:
+- Гарантирует порядок запуска: БД готова — потом стартует приложение.
+- Docker сможет перезапустить контейнер, если healthcheck не проходит.
+
+4) Переменные окружения
+- Все ключевые настройки приходят через .env (создаётся на сервере из секретов GitHub).
+- Через флаги RUN_MIGRATIONS / RUN_COLLECTSTATIC можно управлять миграциями и сборкой статики без правки образа.
+- Параметры Gunicorn, порты, домены, JWT/CSRF и т.д. задаются централизованно.
+
+Итог docker-части: на сервере есть docker-compose-prod.yml, который поднимает MySQL и бэкенд-образ из реестра ECR, ждёт готовности БД, применяет миграции/статику и стартует gunicorn, проверяя здоровье через /healthz.
+
+### Часть 2. CI/CD pipeline (как доставка на сервер автоматизирована)
+Триггеры:
+- Пайплайн GitHub Actions запускается при push в ветку prod или вручную (workflow_dispatch).
+
+Шаги пайплайна:
+1) Checkout
+- Забирает код репозитория для сборки образа.
+
+2) AWS credentials
+- Настраивает временные AWS креды из GitHub Secrets для доступа к ECR (и далее для EC2 шага).
+
+3) Login to ECR
+- Выполняется авторизация docker-клиента в реестре ECR.
+
+4) Build and push image
+- Собирается образ приложения с тегом prod, используя docker/DockerfileProd.
+- Локальный тег переписывается в полный тег ECR:REGISTRY/ichbooking-web:prod.
+- Образ пушится в ECR.
+- На этом шаге мы получаем версионированный контейнер в облачном реестре.
+
+5) Deploy на EC2 по SSH
+- Подключается к вашему EC2 (адрес/пользователь/SSH-ключ — из Secrets).
+- Внутри SSH-сессии на сервере:
+  - Логинится в ECR (через временный пароль, полученный из aws-cli контейнера).
+  - Обновляет каталог проекта на сервере: либо клонирует, либо делает fetch+reset на текущую ветку (prod).
+  - Генерирует файл .env на сервере из GitHub Secrets и Variables (в него попадают все нужные параметры: DJANGO_*, DB_*, JWT_*, RUN_* и т.д.).
+  - Выполняет:
+    - docker compose -f docker-compose-prod.yml --env-file .env pull — подтягивает свежий образ из ECR.
+    - docker compose -f docker-compose-prod.yml --env-file .env up -d — применяет изменения и перезапускает сервисы.
+  - Чистит старые образы/кеши сборщика (prune) старше 24 часов, чтобы не раздувать диск.
+
+### Что получается на выходе:
+- Каждое изменение в prod ветке вызывает сборку нового образа и деплой на EC2.
+- Контейнер web обновляется до свежего тега prod, перезапускается с новыми переменными окружения.
+- БД сохраняет данные в томе db_data, миграции накатываются автоматически (если RUN_MIGRATIONS=true).
+
+### Схема “от коммита до продакшена”: коротко
+- Commit → push в prod.
+- GitHub Actions:
+  - Собирает образ → пушит в ECR.
+  - Подключается к EC2 → логин в ECR → docker compose pull → up -d.
+- На EC2:
+  - web ждёт, пока db станет healthy.
+  - entrypoint ждёт доступности БД, накатывает миграции/collectstatic, стартует gunicorn.
+  - Healthcheck /healthz подтверждает готовность.
+
+### Практические рекомендации и проверки
+- Rollback: можно быстро откатиться, сменив IMAGE_TAG (например, на предыдущий тег) и снова выполнить compose pull/up; либо хранить версионированные теги образов и переключать их в переменных окружения.
+- Безопасность:
+  - Держите DJANGO_SECRET_KEY, DB_PASSWORD и AWS ключи только в GitHub Secrets.
+  - В проде ставьте Secure/HttpOnly/SameSite для куков (управляется через переменные).
+  - Отключайте DEBUG.
+- Доступность:
+  - Следите за healthcheck в web и за состоянием MySQL через docker ps / logs.
+  - Индексы БД и параметры сортировок уже учтены на уровне репозитория — от этого зависят SLA поиска.
+- Миграции:
+  - Если нужно применить миграции вручную (например, контрольный релиз) — выставьте RUN_MIGRATIONS=false, поднимите, затем накатите миграции отдельным one-off контейнером и верните RUN_MIGRATIONS=true.
+- Данные:
+  - Том db_data хранит данные MySQL — резервное копирование делайте на уровне снапшотов тома или mysqldump.
+[ChatExport_2025-08-28](../../Downloads/Telegram%20Desktop/ChatExport_2025-08-28)[ChatExport_2025-08-28.zip](../../Downloads/Telegram%20Desktop/ChatExport_2025-08-28.zip)
