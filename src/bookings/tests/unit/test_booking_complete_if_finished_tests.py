@@ -5,17 +5,16 @@ from src.bookings.domain.entities import BookingStatus
 from src.bookings.tests.factories import make_booking
 
 class BookingCompleteIfFinishedTests(SimpleTestCase):
+    start = date.today() - timedelta(days=5)
+    end = start + timedelta(days=2)
+
     def test_complete_when_confirmed_and_finished(self):
-        start = date.today() - timedelta(days=5)
-        end = start + timedelta(days=2)  # уже закончилась
-        b = make_booking(start=start, end=end, status=BookingStatus.CONFIRMED)
+        b = make_booking(start=self.start, end=self.end, status=BookingStatus.CONFIRMED)
         b.complete_if_finished(today=date.today())
         self.assertEqual(b.status, BookingStatus.COMPLETED)
 
     def test_not_complete_if_not_confirmed(self):
-        start = date.today() - timedelta(days=5)
-        end = start + timedelta(days=2)
-        b = make_booking(start=start, end=end, status=BookingStatus.REQUESTED)
+        b = make_booking(start=self.start, end=self.end, status=BookingStatus.REQUESTED)
         b.complete_if_finished(today=date.today())
         self.assertEqual(b.status, BookingStatus.REQUESTED)
 
