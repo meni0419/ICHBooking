@@ -1,0 +1,26 @@
+[run]
+branch = True
+source =
+    src
+omit =
+    */migrations/*
+    */tests/*
+    */__init__.py
+    .tox/*
+    .venv/*
+    venv/*
+    */settings/*
+
+[report]
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    if __name__ == .__main__.:
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml
